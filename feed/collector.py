@@ -510,7 +510,14 @@ def extract_public_posts(page_html):
 
 def seed_public():
     url = f"https://t.me/s/{CHANNEL_USERNAME}"
-    with urllib.request.urlopen(url, timeout=20) as response:
+    req = urllib.request.Request(
+        url,
+        headers={
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+            "Accept-Language": "ru-RU,ru;q=0.9"
+        }
+    )
+    with urllib.request.urlopen(req, timeout=20) as response:
         page = response.read().decode("utf-8", errors="replace")
     seeded = extract_public_posts(page)
     if not seeded:
