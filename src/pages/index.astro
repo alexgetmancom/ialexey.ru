@@ -46,7 +46,7 @@ if (parsedData) {
 const sortedItems = feedItems
   .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
-// Format date helper matching Europe/Moscow timezone format: DD.MM.YYYY HH:MM
+// Format date helpers matching Europe/Moscow timezone format: DD.MM.YYYY HH:MM and HH:MM
 function formatDate(value: string) {
   if (!value) return "";
   try {
@@ -66,13 +66,29 @@ function formatDate(value: string) {
   }
 }
 
+function formatTimeOnly(value: string) {
+  if (!value) return "";
+  try {
+    const date = new Date(value);
+    const formatter = new Intl.DateTimeFormat("ru-RU", {
+      timeZone: "Europe/Moscow",
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: false,
+    });
+    return formatter.format(date);
+  } catch (e) {
+    return "";
+  }
+}
+
 // Post path helper
 function getPostPath(item: any) {
   const messageId = item.message_id || item.id.split(':').pop();
   return `/posts/${messageId}/`;
 }
 
-// Title truncation helper
+// Title truncation helpers
 function cleanText(text: string) {
   return (text || "").replace(/\n{3,}/g, "\n\n").trim();
 }
@@ -142,89 +158,472 @@ const schemaObject = {
 
 const schema = JSON.stringify(schemaObject);
 
-// Separate the first post as the Featured Hero Post
-const featuredItem = sortedItems.length > 0 ? sortedItems[0] : null;
-const gridItems = sortedItems.length > 1 ? sortedItems.slice(1) : [];
+// 1. "Главное на сегодня" (Top 5 most important/recent posts)
+const mainFeaturedItems = sortedItems.slice(0, 5);
+
+// 2. "Статьи" - main posts (we filter posts with images, or render all as dynamic cards in the grid)
+const articleItems = sortedItems.filter(item => item.image || item.text.length > 80);
+
+// 3. "Лента всех новостей" (Full list for the sidebar, aligned with mainFeaturedItems height)
+const sidebarItems = sortedItems.slice(0, 10);
 ---
 <Layout title={siteTitle} description={siteDescription} schema={schema}>
-  
-  {featuredItem ? (
-      <!-- 1. FEATURED HERO POST (Rozetked style) -->
-      <div class="featured-card-wrap">
-          {(() => {
-              const badge = getSmartBadge(featuredItem.text);
-              const dateStr = formatDate(featuredItem.date);
-              const title = truncateText(featuredItem.text || "", 120) || `Пост Telegram ${featuredItem.message_id}`;
-              const desc = featuredItem.text || "";
-              const postUrl = getPostPath(featuredItem);
-              
-              return (
-                  <a href={postUrl} class="post-card post-card--featured">
-                      <div class="post-card__img-container">
-                          {featuredItem.image ? (
-                              <img 
-                                  src={`/${featuredItem.image}`} 
-                                  class="post-card__img" 
-                                  alt="Главная новость" 
-                                  loading="eager"
-                              />
-                          ) : (
-                              <!-- Sleek Rozetked-style fallback gradient -->
-                              <div class="post-card__img" style="background: linear-gradient(135deg, #ff2a3b 0%, #bd00ff 100%); height: 100%; width: 100%;"></div>
-                          )}
-                      </div>
-                      <div class="post-card__content">
-                          <div class="post-card__meta-row">
-                              <span class={`badge ${badge.class}`}>{badge.label}</span>
-                              <span class="post-card__date">{dateStr} MSK</span>
-                          </div>
-                          <h2 class="post-card__title">{title}</h2>
-                          <p class="post-card__desc">{desc}</p>
-                      </div>
-                  </a>
-              );
-          })()}
-      </div>
-  ) : (
-      <div class="telegram-feed__empty" style="text-align: center; padding: 3rem; margin-bottom: 3rem;">
-          Лента постов пока пуста. Новые посты появятся здесь автоматически!
-      </div>
-  )}
 
-  {gridItems.length > 0 && (
-      <!-- 2. OTHER POSTS GRID (Meduza / Rozetked style) -->
-      <section class="media-grid">
-          {gridItems.map((item) => {
-              const badge = getSmartBadge(item.text);
-              const dateStr = formatDate(item.date);
-              const title = truncateText(item.text || "", 86) || `Пост Telegram ${item.message_id}`;
-              const desc = item.text || "";
-              const postUrl = getPostPath(item);
+  <div class="page-layout-grid">
+      
+      <!-- LEFT COLUMN: MAIN CONTENT (Main + Stream + Articles) -->
+      <div class="main-content-col">
+          
+          <!-- BLOCK 1: ГЛАВНОЕ НА СЕГОДНЯ (Compact single-line list) -->
+          {mainFeaturedItems.length > 0 && (
+              <div class="today-featured-card">
+                  <h2 class="featured-card-title">Главное на сегодня</h2>
+                  <div class="featured-list">
+                      {mainFeaturedItems.map((item) => {
+                          const timeStr = formatTimeOnly(item.date);
+                          const title = truncateText(item.text || "", 115) || `Новость из Telegram ${item.message_id}`;
+                          const postUrl = getPostPath(item);
+                          return (
+                              <a href={postUrl} class="featured-item-link">
+                                  <span class="featured-item-time">{timeStr}</span>
+                                  <span class="featured-item-text">{title}</span>
+                              </a>
+                          );
+                      })}
+                  </div>
+              </div>
+          )}
+
+          <!-- BLOCK 2: СТРИМ МОЙ (Premium Live Stream Box) -->
+          <div class="stream-banner">
+              <div class="stream-header-row">
+                  <div class="stream-live-tag">
+                      <span class="stream-live-dot"></span>
+                      <span>Мои трансляции</span>
+                  </div>
+                  <span class="stream-subtitle-mono">LIVE / ONLINE</span>
+              </div>
+              <div class="stream-body">
+                  <h3 class="stream-title">Присоединяйтесь к моим стримам!</h3>
+                  <p class="stream-text">
+                      Реверс-инжиниринг, обзоры новых ИИ-моделей, кодинг в реальном времени, ламповое общение, Hearthstone и разборы IT-новостей.
+                  </p>
+                  <div class="stream-buttons">
+                      <a href="https://youtube.com/@ialexeyru" target="_blank" rel="noopener noreferrer" class="stream-btn stream-btn--youtube">
+                          <svg viewBox="0 0 24 24" fill="currentColor" class="stream-btn-icon"><path d="M23.498 6.163a3.003 3.003 0 0 0-2.11-2.11C19.517 3.545 12 3.545 12 3.545s-7.517 0-9.388.508a3.003 3.003 0 0 0-2.11 2.11C0 8.033 0 12 0 12s0 3.967.502 5.837a3.003 3.003 0 0 0 2.11 2.11c1.871.508 9.388.508 9.388.508s7.517 0 9.388-.508a3.003 3.003 0 0 0 2.11-2.11C24 15.967 24 12 24 12s0-3.967-.502-5.837zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>
+                          <span>YouTube</span>
+                      </a>
+                      <a href="https://twitch.tv/ialexeyrus" target="_blank" rel="noopener noreferrer" class="stream-btn stream-btn--twitch">
+                          <svg viewBox="0 0 24 24" fill="currentColor" class="stream-btn-icon"><path d="M11.571 4.714h1.715v5.143H11.57zm4.715 0H18v5.143h-1.714zM6 0L1.714 4.286v15.428h5.143V24l4.286-4.286h3.428L22.286 12V0zm14.571 11.143l-3.428 3.428h-3.429l-3 3v-3H6.857V1.714h13.714Z"/></svg>
+                          <span>Twitch</span>
+                      </a>
+                  </div>
+                  
+                  <!-- Responsive Twitch Embed -->
+                  <div class="stream-embed-container">
+                      <iframe
+                          src="https://player.twitch.tv/?channel=ialexeyrus&parent=ialexey.ru&parent=localhost&parent=127.0.0.1&autoplay=false"
+                          style="border: 0; width: 100%; height: 100%;"
+                          allowfullscreen="true">
+                      </iframe>
+                  </div>
+              </div>
+          </div>
+
+          <!-- BLOCK 3: СТАТЬИ (Premium Articles Grid) -->
+          <section class="articles-section">
+              <h2 class="section-title">Статьи</h2>
+              {articleItems.length === 0 ? (
+                  <div class="telegram-feed__empty" style="padding: 3rem; text-align: center;">Постов пока нет. Новые посты появятся здесь автоматически!</div>
+              ) : (
+                  <div class="articles-grid">
+                      {articleItems.map((item) => {
+                          const badge = getSmartBadge(item.text);
+                          const dateStr = formatDate(item.date);
+                          const title = truncateText(item.text || "", 86) || `Пост Telegram ${item.message_id}`;
+                          const desc = item.text || "";
+                          const postUrl = getPostPath(item);
+                          return (
+                              <a href={postUrl} class="post-card">
+                                  {item.image && (
+                                      <div class="post-card__img-container">
+                                          <img 
+                                              src={`/${item.image}`} 
+                                              class="post-card__img" 
+                                              alt="Обложка статьи" 
+                                              loading="lazy"
+                                          />
+                                      </div>
+                                  )}
+                                  <div class="post-card__content">
+                                      <div class="post-card__meta-row">
+                                          <span class={`badge ${badge.class}`}>{badge.label}</span>
+                                          <span class="post-card__date">{dateStr}</span>
+                                      </div>
+                                      <h3 class="post-card__title">{title}</h3>
+                                      <p class="post-card__desc">{desc}</p>
+                                  </div>
+                              </a>
+                          );
+                      })}
+                  </div>
+              )}
+          </section>
+
+      </div>
+
+      <!-- RIGHT COLUMN: SIDEBAR LENTA (Championat.com style) -->
+      {sidebarItems.length > 0 && (
+          <aside class="sidebar-col">
+              <div class="sidebar-header">
+                  <h2 class="sidebar-main-title">Лента всех новостей</h2>
+              </div>
               
-              return (
-                  <a href={postUrl} class="post-card">
-                      {item.image && (
-                          <div class="post-card__img-container">
-                              <img 
-                                  src={`/${item.image}`} 
-                                  class="post-card__img" 
-                                  alt="Новость" 
-                                  loading="lazy"
-                              />
-                          </div>
-                      )}
-                      <div class="post-card__content">
-                          <div class="post-card__meta-row">
-                              <span class={`badge ${badge.class}`}>{badge.label}</span>
-                              <span class="post-card__date">{dateStr} MSK</span>
-                          </div>
-                          <h3 class="post-card__title">{title}</h3>
-                          <p class="post-card__desc">{desc}</p>
-                      </div>
-                  </a>
-              );
-          })}
-      </section>
-  )}
+              <div class="sidebar-list">
+                  {sidebarItems.map((item) => {
+                      const timeStr = formatTimeOnly(item.date);
+                      const title = truncateText(item.text || "", 120) || `Обновление ленты ${item.message_id}`;
+                      const postUrl = getPostPath(item);
+                      return (
+                          <a href={postUrl} class="sidebar-item">
+                              <span class="sidebar-item-time">{timeStr}</span>
+                              <span class="sidebar-item-text">{title}</span>
+                          </a>
+                      );
+                  })}
+              </div>
+          </aside>
+      )}
+
+  </div>
 
 </Layout>
+
+<style>
+  /* MAIN PAGE GRID SYSTEM */
+  .page-layout-grid {
+      display: grid;
+      grid-template-columns: 1.8fr 1fr;
+      gap: 2.5rem;
+  }
+
+  .main-content-col {
+      display: flex;
+      flex-direction: column;
+      gap: 2.5rem;
+      min-width: 0; /* Prevent flex/nowrap children from expanding column */
+  }
+
+  /* 1. ГЛАВНОЕ НА СЕГОДНЯ BOX - COMPACT */
+  .today-featured-card {
+      background-color: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 0.9rem 1.15rem;
+  }
+
+  .featured-card-title {
+      font-size: 1.15rem;
+      margin: 0 0 0.85rem;
+      font-family: var(--font-heading);
+      font-weight: 800;
+      color: var(--text-header);
+      text-transform: uppercase;
+      letter-spacing: -0.5px;
+      border-left: 3px solid var(--accent);
+      padding-left: 0.6rem;
+  }
+
+  .featured-list {
+      display: flex;
+      flex-direction: column;
+  }
+
+  .featured-item-link {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.4rem 0;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+      transition: all 0.2s ease;
+  }
+
+  .featured-item-link:last-child {
+      border-bottom: none;
+      padding-bottom: 0;
+  }
+
+  .featured-item-link:first-child {
+      padding-top: 0;
+  }
+
+  .featured-item-time {
+      font-family: var(--font-mono);
+      font-size: 0.78rem;
+      color: #6c7482;
+      flex: 0 0 42px;
+      font-weight: 500;
+  }
+
+  .featured-item-text {
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: var(--text-header);
+      line-height: 1.2;
+      white-space: nowrap; /* Strictly single line */
+      text-overflow: ellipsis; /* Appends ... */
+      overflow: hidden; /* Hides overflow */
+      flex-grow: 1;
+  }
+
+  .featured-item-link:hover .featured-item-text {
+      color: var(--accent);
+  }
+
+  .featured-item-link:hover {
+      transform: translateX(4px);
+  }
+
+  /* 2. PREMIUM STREAM BANNER & TWITCH EMBED */
+  .stream-banner {
+      background: linear-gradient(135deg, rgba(25, 20, 36, 0.6) 0%, rgba(13, 17, 26, 0.8) 100%);
+      border: 1px solid rgba(145, 70, 255, 0.2);
+      border-radius: 16px;
+      padding: 1.75rem;
+      position: relative;
+      overflow: hidden;
+      box-shadow: 0 10px 30px rgba(145, 70, 255, 0.05);
+  }
+
+  .stream-banner::before {
+      content: "";
+      position: absolute;
+      top: -50%;
+      right: -20%;
+      width: 300px;
+      height: 300px;
+      background: radial-gradient(circle, rgba(145, 70, 255, 0.15) 0%, transparent 70%);
+      pointer-events: none;
+  }
+
+  .stream-header-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 1rem;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+  }
+
+  .stream-live-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      background-color: rgba(145, 70, 255, 0.1);
+      border: 1px solid rgba(145, 70, 255, 0.3);
+      padding: 3px 10px;
+      border-radius: 20px;
+      font-family: var(--font-mono);
+      font-size: 0.65rem;
+      font-weight: 700;
+      color: #b380ff;
+      text-transform: uppercase;
+  }
+
+  .stream-live-dot {
+      width: 6px;
+      height: 6px;
+      background-color: #9146ff;
+      border-radius: 50%;
+      box-shadow: 0 0 8px #9146ff;
+  }
+
+  .stream-subtitle-mono {
+      font-family: var(--font-mono);
+      font-size: 0.72rem;
+      color: #6c7482;
+      letter-spacing: 1px;
+  }
+
+  .stream-title {
+      font-family: var(--font-heading);
+      font-size: 1.4rem;
+      color: var(--text-header);
+      margin: 0 0 0.5rem;
+  }
+
+  .stream-text {
+      font-size: 0.95rem;
+      line-height: 1.5;
+      color: var(--text-main);
+      margin: 0 0 1.25rem;
+      max-width: 650px;
+  }
+
+  .stream-buttons {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      flex-wrap: wrap;
+  }
+
+  .stream-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.6rem;
+      font-family: var(--font-mono);
+      font-size: 0.82rem;
+      font-weight: bold;
+      padding: 0.65rem 1.25rem;
+      border-radius: 6px;
+      transition: all 0.2s;
+  }
+
+  .stream-btn--youtube {
+      background-color: #FF0000;
+      color: #ffffff;
+      box-shadow: 0 4px 12px rgba(255, 0, 0, 0.2);
+  }
+
+  .stream-btn--youtube:hover {
+      background-color: #cc0000;
+      transform: translateY(-2px);
+      color: #ffffff;
+  }
+
+  .stream-btn--twitch {
+      background-color: #9146FF;
+      color: #ffffff;
+      box-shadow: 0 4px 12px rgba(145, 70, 255, 0.2);
+  }
+
+  .stream-btn--twitch:hover {
+      background-color: #772ce8;
+      transform: translateY(-2px);
+      color: #ffffff;
+  }
+
+  .stream-btn-icon {
+      width: 16px;
+      height: 16px;
+  }
+
+  .stream-embed-container {
+      margin-top: 1.5rem;
+      aspect-ratio: 16 / 9;
+      width: 100%;
+      border-radius: 10px;
+      overflow: hidden;
+      border: 1px solid rgba(145, 70, 255, 0.25);
+      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.5);
+  }
+
+  /* 3. ARTICLES SECTION TITLE & GRID */
+  .section-title {
+      font-size: 1.5rem;
+      margin: 0 0 1.5rem;
+      font-family: var(--font-heading);
+      font-weight: 800;
+      text-transform: uppercase;
+      border-left: 3px solid var(--accent);
+      padding-left: 0.75rem;
+      color: var(--text-header);
+  }
+
+  .articles-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 2rem;
+  }
+
+  /* 4. CHAMPIONAT SIDEBAR - ALIGNED TO TOP GRID */
+  .sidebar-col {
+      display: flex;
+      flex-direction: column;
+      border-left: 1px solid var(--border);
+      padding-left: 1.5rem;
+      position: sticky;
+      top: 1.5rem;
+      align-self: start;
+      min-width: 0; /* Allow clean resizing */
+  }
+
+  .sidebar-header {
+      padding-bottom: 0.85rem;
+      border-bottom: 2px solid var(--accent);
+      margin-bottom: 0.75rem;
+  }
+
+  .sidebar-main-title {
+      font-size: 1.1rem;
+      margin: 0;
+      font-family: var(--font-heading);
+      font-weight: 800;
+      color: var(--text-header);
+      text-transform: uppercase;
+      letter-spacing: -0.5px;
+  }
+
+  .sidebar-list {
+      display: flex;
+      flex-direction: column;
+  }
+
+  .sidebar-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.75rem;
+      padding: 0.6rem 0;
+      border-bottom: 1px dashed rgba(255, 255, 255, 0.08);
+      transition: all 0.2s ease;
+  }
+
+  .sidebar-item:last-child {
+      border-bottom: none;
+  }
+
+  .sidebar-item-time {
+      font-family: var(--font-mono);
+      font-size: 0.78rem;
+      color: var(--accent);
+      flex: 0 0 42px;
+      font-weight: 600;
+      margin-top: 0.15rem; /* Align perfectly with first line of text */
+  }
+
+  .sidebar-item-text {
+      font-size: 0.88rem;
+      line-height: 1.4;
+      color: var(--text-main);
+      font-weight: 400;
+      flex-grow: 1;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+  }
+
+  .sidebar-item:hover .sidebar-item-text {
+      color: var(--text-header);
+  }
+
+  .sidebar-item:hover {
+      transform: translateX(4px);
+  }
+
+  /* RESPONSIVE SYSTEM */
+  @media (max-width: 900px) {
+      .page-layout-grid {
+          grid-template-columns: 1fr;
+          gap: 1.5rem;
+      }
+      .sidebar-col {
+          border-left: none;
+          padding-left: 0;
+          border-top: 1px solid var(--border);
+          padding-top: 1.5rem;
+          position: relative;
+          top: 0;
+      }
+  }
+</style>
