@@ -111,33 +111,32 @@ const publicBaseUrl = "https://ialexey.ru";
             display: flex;
             align-items: center;
             gap: 0.75rem;
+            text-decoration: none;
+        }
+
+        .logo-avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 1.5px solid var(--border);
+            transition: all 0.3s ease;
+        }
+
+        .logo-wrap:hover .logo-avatar {
+            border-color: var(--accent);
+            transform: scale(1.05);
         }
 
         .logo-text {
             font-family: var(--font-heading);
-            font-size: 1.5rem;
+            font-size: 1.3rem;
             font-weight: 800;
-            letter-spacing: -1px;
-            text-transform: uppercase;
-            background: linear-gradient(135deg, #ffffff 60%, var(--accent) 100%);
+            letter-spacing: -0.5px;
+            background: linear-gradient(135deg, #ffffff 70%, var(--accent) 100%);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
-        }
-
-        .live-indicator {
-            display: inline-flex;
-            align-items: center;
-            gap: 0.4rem;
-            font-family: var(--font-mono);
-            font-size: 0.65rem;
-            font-weight: bold;
-            color: var(--accent);
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            background: rgba(255, 42, 59, 0.08);
-            padding: 2px 8px;
-            border-radius: 20px;
-            border: 1px solid rgba(255, 42, 59, 0.2);
+            transition: all 0.3s ease;
         }
 
         .live-dot {
@@ -460,19 +459,16 @@ const publicBaseUrl = "https://ialexey.ru";
     <div class="container">
         <!-- Compact Media Header -->
         <header class="media-header">
-            <div class="logo-wrap">
-                <a href="/" class="logo-text">iAlexey</a>
-                <div class="live-indicator">
-                    <div class="live-dot"></div>
-                    <span>LIVE</span>
-                </div>
-            </div>
+            <a href="/" class="logo-wrap">
+                <img src="/avatar.png" alt="Алексей Гетманец" class="logo-avatar" />
+                <span class="logo-text">Алексей Гетманец</span>
+            </a>
             
             <div class="social-row">
                 <a href="https://t.me/iAlexeyRu" class="btn-social telegram" target="_blank" rel="noopener noreferrer" aria-label="Telegram" data-tooltip="Telegram">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg>
                 </a>
-                <a href="https://youtube.com/@ialexeyru" class="btn-social youtube" target="_blank" rel="noopener noreferrer" aria-label="YouTube" data-tooltip="YouTube">
+                <a href="https://www.youtube.com/@iAlexeyRu" class="btn-social youtube" target="_blank" rel="noopener noreferrer" aria-label="YouTube" data-tooltip="YouTube">
                     <svg viewBox="0 0 24 24" fill="currentColor"><path d="M23.498 6.163a3.003 3.003 0 0 0-2.11-2.11C19.517 3.545 12 3.545 12 3.545s-7.517 0-9.388.508a3.003 3.003 0 0 0-2.11 2.11C0 8.033 0 12 0 12s0 3.967.502 5.837a3.003 3.003 0 0 0 2.11 2.11c1.871.508 9.388.508 9.388.508s7.517 0 9.388-.508a3.003 3.003 0 0 0 2.11-2.11C24 15.967 24 12 24 12s0-3.967-.502-5.837zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>
                 </a>
                 <a href="https://discord.gg/Z7sSm56rcb" class="btn-social discord" target="_blank" rel="noopener noreferrer" aria-label="Discord" data-tooltip="Discord">
@@ -485,7 +481,7 @@ const publicBaseUrl = "https://ialexey.ru";
                     <a href="https://x.com/iAlexeyRu" class="btn-social twitter" target="_blank" rel="noopener noreferrer" aria-label="Twitter" data-tooltip="Twitter">
                         <svg viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
                     </a>
-                    <a href="https://twitch.tv/ialexeyrus" class="btn-social twitch" target="_blank" rel="noopener noreferrer" aria-label="Twitch" data-tooltip="Twitch">
+                    <a href="https://twitch.tv/ialexeyru" class="btn-social twitch" target="_blank" rel="noopener noreferrer" aria-label="Twitch" data-tooltip="Twitch">
                         <svg viewBox="0 0 24 24" fill="currentColor"><path d="M11.571 4.714h1.715v5.143H11.57zm4.715 0H18v5.143h-1.714zM6 0L1.714 4.286v15.428h5.143V24l4.286-4.286h3.428L22.286 12V0zm14.571 11.143l-3.428 3.428h-3.429l-3 3v-3H6.857V1.714h13.714Z"/></svg>
                     </a>
                     <a href="https://github.com/iAlexeyRu" class="btn-social github" target="_blank" rel="noopener noreferrer" aria-label="GitHub" data-tooltip="GitHub">

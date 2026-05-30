@@ -9,6 +9,45 @@ const siteAuthor = "Алексей Гетманец";
 const siteTitle = "Алексей Гетманец | Сливы и новости ИИ";
 const siteDescription = "Сливы и новости ИИ от Алексея Гетманца: короткая Telegram-лента, RSS и статические страницы постов.";
 
+// Fetch latest completed YouTube video ID at build time (runs every minute on the VPS sync job)
+let latestCompletedVideoId = "e-RHZvID8q8"; // High-quality completed stream fallback
+try {
+  const res = await fetch('https://www.youtube.com/feeds/videos.xml?channel_id=UCMFl8-kqE8n9cyErKFSbPuQ');
+  if (res.ok) {
+    const xmlText = await res.text();
+    const entryRegex = /<entry>([\s\S]*?)<\/entry>/g;
+    let match;
+    const videos = [];
+    
+    while ((match = entryRegex.exec(xmlText)) !== null) {
+      const entryContent = match[1];
+      const idMatch = entryContent.match(/<yt:videoId>([^<]+)<\/yt:videoId>/);
+      const titleMatch = entryContent.match(/<title>([^<]+)<\/title>/);
+      
+      if (idMatch && titleMatch) {
+        videos.push({
+          id: idMatch[1].trim(),
+          title: titleMatch[1].trim()
+        });
+      }
+    }
+    
+    // Skip any video containing upcoming indicators in their Russian or English title
+    const completedVideos = videos.filter(v => {
+      const t = v.title.toLowerCase();
+      return !t.includes('ожидаем') && !t.includes('ожидани') && !t.includes('waiting') && !t.includes('upcoming');
+    });
+    
+    if (completedVideos.length > 0) {
+      latestCompletedVideoId = completedVideos[0].id;
+    } else if (videos.length > 0) {
+      latestCompletedVideoId = videos[0].id;
+    }
+  }
+} catch (e) {
+  console.error('Error fetching or parsing YouTube RSS feed in Astro build:', e);
+}
+
 // Load feed items
 const dataDir = process.env.DATA_DIR || '/home/deploy/ialexey-feed/data';
 const prodFeedJsonPath = path.join(dataDir, 'feed.json');
@@ -66,6 +105,29 @@ function formatDate(value: string) {
   }
 }
 
+function formatDateRussian(value: string) {
+  if (!value) return "";
+  try {
+    const date = new Date(value);
+    const months = [
+      "января", "февраля", "марта", "апреля", "мая", "июня",
+      "июля", "августа", "сентября", "октября", "ноября", "декабря"
+    ];
+    const day = date.getDate();
+    const month = months[date.getMonth()];
+    const formatterTime = new Intl.DateTimeFormat("ru-RU", {
+      timeZone: "Europe/Moscow",
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: false,
+    });
+    const timeStr = formatterTime.format(date);
+    return `${day} ${month}, ${timeStr}`;
+  } catch (e) {
+    return value;
+  }
+}
+
 function formatTimeOnly(value: string) {
   if (!value) return "";
   try {
@@ -107,15 +169,15 @@ function truncateText(value: string, limit: number) {
 function getSmartBadge(text: string) {
   const t = (text || "").toLowerCase();
   if (t.includes("слив") || t.includes("утек") || t.includes("секрет") || t.includes("leak") || t.includes("эксклюзив")) {
-    return { label: "Сливы", class: "badge--leaks" };
+    return { label: "Сливы", class: "badge--leaks", emoji: "🤫" };
   }
   if (t.includes("gpt") || t.includes("gemini") || t.includes("claude") || t.includes("anthropic") || t.includes("openai") || t.includes("google") || t.includes("llama")) {
-    return { label: "ИИ-Модели", class: "badge--ai" };
+    return { label: "ИИ-Модели", class: "badge--ai", emoji: "🧠" };
   }
   if (t.includes("нейросеть") || t.includes("midjourney") || t.includes("sora") || t.includes("генераци") || t.includes("искусствен")) {
-    return { label: "Нейросети", class: "badge--neural" };
+    return { label: "Нейросети", class: "badge--neural", emoji: "🎨" };
   }
-  return { label: "Новости", class: "badge--news" };
+  return { label: "Новости", class: "badge--news", emoji: "📰" };
 }
 
 // Schema.org dynamic markup
@@ -194,78 +256,76 @@ const sidebarItems = sortedItems.slice(0, 10);
               </div>
           )}
 
-          <!-- BLOCK 2: СТРИМ МОЙ (Premium Live Stream Box) -->
-          <div class="stream-banner">
+          <!-- BLOCK 2: СТРИМ МОЙ (Premium Live Stream Box - Minimalist with YouTube fallback) -->
+          <div class="stream-banner" id="stream-block" data-youtube-id={latestCompletedVideoId}>
               <div class="stream-header-row">
-                  <div class="stream-live-tag">
-                      <span class="stream-live-dot"></span>
-                      <span>Мои трансляции</span>
+                  <div class="stream-title-wrap">
+                      <span class="stream-status-dot" id="stream-status-dot"></span>
+                      <span class="stream-status-text" id="stream-status-text">Загрузка трансляции...</span>
                   </div>
-                  <span class="stream-subtitle-mono">LIVE / ONLINE</span>
+                  <button id="toggle-stream-btn" class="toggle-stream-btn" aria-label="Свернуть блок">
+                      <span class="toggle-text">Свернуть</span>
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="toggle-icon"><path d="m18 15-6-6-6 6"/></svg>
+                  </button>
               </div>
-              <div class="stream-body">
-                  <h3 class="stream-title">Присоединяйтесь к моим стримам!</h3>
-                  <p class="stream-text">
-                      Реверс-инжиниринг, обзоры новых ИИ-моделей, кодинг в реальном времени, ламповое общение, Hearthstone и разборы IT-новостей.
-                  </p>
-                  <div class="stream-buttons">
-                      <a href="https://youtube.com/@ialexeyru" target="_blank" rel="noopener noreferrer" class="stream-btn stream-btn--youtube">
-                          <svg viewBox="0 0 24 24" fill="currentColor" class="stream-btn-icon"><path d="M23.498 6.163a3.003 3.003 0 0 0-2.11-2.11C19.517 3.545 12 3.545 12 3.545s-7.517 0-9.388.508a3.003 3.003 0 0 0-2.11 2.11C0 8.033 0 12 0 12s0 3.967.502 5.837a3.003 3.003 0 0 0 2.11 2.11c1.871.508 9.388.508 9.388.508s7.517 0 9.388-.508a3.003 3.003 0 0 0 2.11-2.11C24 15.967 24 12 24 12s0-3.967-.502-5.837zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>
-                          <span>YouTube</span>
-                      </a>
-                      <a href="https://twitch.tv/ialexeyrus" target="_blank" rel="noopener noreferrer" class="stream-btn stream-btn--twitch">
-                          <svg viewBox="0 0 24 24" fill="currentColor" class="stream-btn-icon"><path d="M11.571 4.714h1.715v5.143H11.57zm4.715 0H18v5.143h-1.714zM6 0L1.714 4.286v15.428h5.143V24l4.286-4.286h3.428L22.286 12V0zm14.571 11.143l-3.428 3.428h-3.429l-3 3v-3H6.857V1.714h13.714Z"/></svg>
-                          <span>Twitch</span>
-                      </a>
-                  </div>
-                  
-                  <!-- Responsive Twitch Embed -->
-                  <div class="stream-embed-container">
-                      <iframe
-                          src="https://player.twitch.tv/?channel=ialexeyrus&parent=ialexey.ru&parent=localhost&parent=127.0.0.1&autoplay=false"
-                          style="border: 0; width: 100%; height: 100%;"
-                          allowfullscreen="true">
-                      </iframe>
+              <div class="stream-body-collapsible" id="stream-body-collapsible">
+                  <!-- Responsive Video Embed Container -->
+                  <div class="stream-embed-container" id="stream-embed-container">
+                      <!-- Embed will be dynamically injected by JS below -->
                   </div>
               </div>
           </div>
 
-          <!-- BLOCK 3: СТАТЬИ (Premium Articles Grid) -->
+          <!-- BLOCK 3: СТАТЬИ (Horizontal Row list - Championat style) -->
           <section class="articles-section">
               <h2 class="section-title">Статьи</h2>
               {articleItems.length === 0 ? (
                   <div class="telegram-feed__empty" style="padding: 3rem; text-align: center;">Постов пока нет. Новые посты появятся здесь автоматически!</div>
               ) : (
-                  <div class="articles-grid">
-                      {articleItems.map((item) => {
+                  <div class="articles-list">
+                      {articleItems.map((item, index) => {
                           const badge = getSmartBadge(item.text);
-                          const dateStr = formatDate(item.date);
+                          const dateStr = formatDateRussian(item.date);
                           const title = truncateText(item.text || "", 86) || `Пост Telegram ${item.message_id}`;
-                          const desc = item.text || "";
+                          const desc = truncateText(item.text || "", 180);
                           const postUrl = getPostPath(item);
+                          const isHidden = index >= 5;
                           return (
-                              <a href={postUrl} class="post-card">
-                                  {item.image && (
-                                      <div class="post-card__img-container">
+                              <a href={postUrl} class={`article-row ${isHidden ? 'article-row--hidden' : ''}`}>
+                                  <div class="article-row__img-container">
+                                      {item.image ? (
                                           <img 
                                               src={`/${item.image}`} 
-                                              class="post-card__img" 
+                                              class="article-row__img" 
                                               alt="Обложка статьи" 
                                               loading="lazy"
                                           />
+                                      ) : (
+                                          <div class="article-row__placeholder-img">
+                                              <span class="placeholder-emoji">{badge.emoji}</span>
+                                          </div>
+                                      )}
+                                      <span class={`article-row__badge-overlay badge ${badge.class}`}>{badge.label}</span>
+                                  </div>
+                                  <div class="article-row__content">
+                                      <h3 class="article-row__title">{title}</h3>
+                                      <p class="article-row__desc">{desc}</p>
+                                      <div class="article-row__meta-row">
+                                          <span class="article-row__date">{dateStr}</span>
                                       </div>
-                                  )}
-                                  <div class="post-card__content">
-                                      <div class="post-card__meta-row">
-                                          <span class={`badge ${badge.class}`}>{badge.label}</span>
-                                          <span class="post-card__date">{dateStr}</span>
-                                      </div>
-                                      <h3 class="post-card__title">{title}</h3>
-                                      <p class="post-card__desc">{desc}</p>
                                   </div>
                               </a>
                           );
                       })}
+                  </div>
+              )}
+
+              {articleItems.length > 5 && (
+                  <div class="articles-show-more-wrap">
+                      <button id="show-more-btn" class="show-more-btn">
+                          <span>Смотреть все</span>
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="show-more-btn__icon"><path d="m6 9 6 6 6-6"/></svg>
+                      </button>
                   </div>
               )}
           </section>
@@ -384,15 +444,119 @@ const sidebarItems = sortedItems.slice(0, 10);
       transform: translateX(4px);
   }
 
-  /* 2. PREMIUM STREAM BANNER & TWITCH EMBED */
+  /* 2. PREMIUM STREAM BANNER WITH YOUTUBE FALLBACK */
   .stream-banner {
       background: linear-gradient(135deg, rgba(25, 20, 36, 0.6) 0%, rgba(13, 17, 26, 0.8) 100%);
       border: 1px solid rgba(145, 70, 255, 0.2);
       border-radius: 16px;
-      padding: 1.75rem;
+      padding: 0.9rem 1.15rem;
       position: relative;
       overflow: hidden;
       box-shadow: 0 10px 30px rgba(145, 70, 255, 0.05);
+      transition: all 0.3s ease;
+  }
+
+  .stream-header-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 0.75rem;
+      transition: margin 0.3s ease;
+  }
+
+  .stream-banner--collapsed .stream-header-row {
+      margin-bottom: 0;
+  }
+
+  .stream-title-wrap {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.6rem;
+  }
+
+  .stream-status-dot {
+      width: 8px;
+      height: 8px;
+      background-color: #6c7482;
+      border-radius: 50%;
+      transition: all 0.3s ease;
+  }
+
+  .stream-status-dot.live {
+      background-color: var(--accent);
+      box-shadow: 0 0 10px var(--accent);
+      animation: pulse 1.8s infinite;
+  }
+
+  .stream-status-dot.offline {
+      background-color: #ff0055; /* YouTube Red Vibe */
+      box-shadow: 0 0 8px rgba(255, 0, 85, 0.4);
+  }
+
+  .stream-status-text {
+      font-family: var(--font-heading);
+      font-size: 0.82rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--text-header);
+  }
+
+  .toggle-stream-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      background: transparent;
+      border: none;
+      color: #6c7482;
+      font-family: var(--font-mono);
+      font-size: 0.72rem;
+      cursor: pointer;
+      padding: 4px 8px;
+      border-radius: 4px;
+      transition: all 0.2s ease;
+  }
+
+  .toggle-stream-btn:hover {
+      color: var(--text-header);
+      background-color: rgba(255, 255, 255, 0.04);
+  }
+
+  .toggle-icon {
+      width: 14px;
+      height: 14px;
+      transition: transform 0.3s ease;
+  }
+
+  .stream-banner--collapsed .toggle-icon {
+      transform: rotate(180deg);
+  }
+
+  .stream-body-collapsible {
+      max-height: 800px;
+      overflow: hidden;
+      transition: max-height 0.4s cubic-bezier(0, 1, 0, 1);
+  }
+
+  .stream-banner--collapsed .stream-body-collapsible {
+      max-height: 0;
+  }
+
+  .stream-embed-container {
+      aspect-ratio: 16 / 9;
+      width: 100%;
+      border-radius: 10px;
+      overflow: hidden;
+      border: 1px solid rgba(145, 70, 255, 0.25);
+      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.5);
+  }
+
+  .stream-banner.live-border {
+      border-color: rgba(145, 70, 255, 0.3);
+  }
+
+  .stream-banner.offline-border {
+      border-color: rgba(255, 0, 85, 0.2);
   }
 
   .stream-banner::before {
@@ -508,15 +672,7 @@ const sidebarItems = sortedItems.slice(0, 10);
       height: 16px;
   }
 
-  .stream-embed-container {
-      margin-top: 1.5rem;
-      aspect-ratio: 16 / 9;
-      width: 100%;
-      border-radius: 10px;
-      overflow: hidden;
-      border: 1px solid rgba(145, 70, 255, 0.25);
-      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.5);
-  }
+  /* Managed inside stream-banner styles above */
 
   /* 3. ARTICLES SECTION TITLE & GRID */
   .section-title {
@@ -530,10 +686,125 @@ const sidebarItems = sortedItems.slice(0, 10);
       color: var(--text-header);
   }
 
-  .articles-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-      gap: 2rem;
+  .articles-list {
+      display: flex;
+      flex-direction: column;
+      gap: 1.75rem;
+  }
+
+  .article-row {
+      display: flex;
+      gap: 1.5rem;
+      padding-bottom: 1.75rem;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+      transition: all 0.25s ease;
+  }
+
+  .article-row:last-child {
+      border-bottom: none;
+      padding-bottom: 0;
+  }
+
+  .article-row__img-container {
+      position: relative;
+      flex: 0 0 240px;
+      aspect-ratio: 16 / 9;
+      border-radius: 8px;
+      overflow: hidden;
+      background-color: #000;
+      border: 1px solid var(--border);
+  }
+
+  .article-row__img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transition: transform 0.4s ease;
+  }
+
+  .article-row:hover .article-row__img {
+      transform: scale(1.05);
+  }
+
+  .article-row__placeholder-img {
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(135deg, #111521 0%, #06080c 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+  }
+
+  .placeholder-emoji {
+      font-size: 2.2rem;
+      opacity: 0.8;
+  }
+
+  .article-row__badge-overlay {
+      position: absolute;
+      top: 8px;
+      left: 8px;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.4);
+      z-index: 10;
+  }
+
+  .article-row__content {
+      display: flex;
+      flex-direction: column;
+      flex-grow: 1;
+      justify-content: center;
+  }
+
+  .article-row__title {
+      font-family: var(--font-heading);
+      font-size: 1.25rem;
+      font-weight: 700;
+      line-height: 1.35;
+      color: var(--text-header);
+      margin: 0 0 0.5rem;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+      transition: color 0.2s;
+  }
+
+  .article-row:hover .article-row__title {
+      color: var(--accent);
+  }
+
+  .article-row__desc {
+      font-size: 0.9rem;
+      line-height: 1.5;
+      color: var(--text-main);
+      margin: 0 0 0.75rem;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+  }
+
+  .article-row__meta-row {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+  }
+
+  .article-row__date {
+      font-family: var(--font-mono);
+      font-size: 0.72rem;
+      color: #6c7482;
+  }
+
+  @media (max-width: 600px) {
+      .article-row {
+          flex-direction: column;
+          gap: 1rem;
+      }
+      .article-row__img-container {
+          flex: 0 0 auto;
+          width: 100%;
+      }
   }
 
   /* 4. CHAMPIONAT SIDEBAR - ALIGNED TO TOP GRID */
@@ -611,6 +882,61 @@ const sidebarItems = sortedItems.slice(0, 10);
       transform: translateX(4px);
   }
 
+  .article-row--hidden {
+      display: none !important;
+  }
+
+  .articles-list--expanded .article-row--hidden {
+      display: flex !important;
+      animation: fadeIn 0.4s ease forwards;
+  }
+
+  @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+  }
+
+  .articles-show-more-wrap {
+      display: flex;
+      justify-content: center;
+      margin-top: 2rem;
+  }
+
+  .show-more-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      background-color: transparent;
+      border: 1px solid var(--border);
+      color: var(--text-header);
+      padding: 0.75rem 2rem;
+      border-radius: 8px;
+      font-family: var(--font-heading);
+      font-size: 0.85rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      cursor: pointer;
+      transition: all 0.25s ease;
+  }
+
+  .show-more-btn:hover {
+      background-color: rgba(255, 42, 59, 0.05);
+      border-color: var(--accent);
+      color: var(--accent);
+      box-shadow: 0 4px 15px rgba(255, 42, 59, 0.15);
+  }
+
+  .show-more-btn__icon {
+      width: 16px;
+      height: 16px;
+      transition: transform 0.25s ease;
+  }
+
+  .show-more-btn:hover .show-more-btn__icon {
+      transform: translateY(2px);
+  }
+
   /* RESPONSIVE SYSTEM */
   @media (max-width: 900px) {
       .page-layout-grid {
@@ -627,3 +953,79 @@ const sidebarItems = sortedItems.slice(0, 10);
       }
   }
 </style>
+
+<script>
+  // Articles Expander
+  const showMoreBtn = document.getElementById('show-more-btn');
+  const articlesList = document.querySelector('.articles-list');
+  if (showMoreBtn && articlesList) {
+      showMoreBtn.addEventListener('click', () => {
+          articlesList.classList.add('articles-list--expanded');
+          showMoreBtn.style.display = 'none';
+      });
+  }
+
+  // Twitch/YouTube Live Swapper and Collapse Toggle
+  const streamBlock = document.getElementById('stream-block');
+  const statusDot = document.getElementById('stream-status-dot');
+  const statusText = document.getElementById('stream-status-text');
+  const embedContainer = document.getElementById('stream-embed-container');
+  const toggleBtn = document.getElementById('toggle-stream-btn');
+  const toggleText = toggleBtn?.querySelector('.toggle-text');
+  const youtubeId = streamBlock?.getAttribute('data-youtube-id') || 'e-RHZvID8q8';
+
+  if (streamBlock && embedContainer) {
+      // 1. Fetch live status from Decapi.me
+      fetch('https://decapi.me/twitch/uptime/ialexeyru')
+          .then(res => res.text())
+          .then(text => {
+              const isLive = !text.toLowerCase().includes('offline');
+              if (isLive) {
+                  statusDot?.classList.add('live');
+                  if (statusText) statusText.textContent = 'LIVE: Трансляция на Twitch';
+                  streamBlock.classList.add('live-border');
+                  embedContainer.innerHTML = `
+                      <iframe
+                          src="https://player.twitch.tv/?channel=ialexeyru&parent=ialexey.ru&parent=localhost&parent=127.0.0.1&autoplay=false"
+                          style="border: 0; width: 100%; height: 100%;"
+                          allowfullscreen="true">
+                      </iframe>
+                  `;
+              } else {
+                  statusDot?.classList.add('offline');
+                  if (statusText) statusText.textContent = 'Последнее видео с YouTube';
+                  streamBlock.classList.add('offline-border');
+                  embedContainer.innerHTML = `
+                      <iframe
+                          src="https://www.youtube.com/embed/${youtubeId}"
+                          style="border: 0; width: 100%; height: 100%;"
+                          allowfullscreen="true"
+                          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture">
+                      </iframe>
+                  `;
+              }
+          })
+          .catch(() => {
+              // Fallback to YouTube on error
+              statusDot?.classList.add('offline');
+              if (statusText) statusText.textContent = 'Последнее видео с YouTube';
+              streamBlock.classList.add('offline-border');
+              embedContainer.innerHTML = `
+                  <iframe
+                      src="https://www.youtube.com/embed/${youtubeId}"
+                      style="border: 0; width: 100%; height: 100%;"
+                      allowfullscreen="true"
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture">
+                  </iframe>
+              `;
+          });
+
+      // 2. Collapse Toggle
+      if (toggleBtn && toggleText) {
+          toggleBtn.addEventListener('click', () => {
+              const isCollapsed = streamBlock.classList.toggle('stream-banner--collapsed');
+              toggleText.textContent = isCollapsed ? 'Развернуть' : 'Свернуть';
+          });
+      }
+  }
+</script>
