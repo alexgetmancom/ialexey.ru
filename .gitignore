@@ -1,0 +1,21 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# OS Files
+.DS_Store
+Thumbs.db
+
+# Feed Application dynamic files and secrets
+feed/ialexey-feed.env
+feed/data/
+
+# Local static files that are generated dynamically on server
+feed.json
+feed.xml
+sitemap.xml
+robots.txt
+llms.txt
+posts/
+media/
