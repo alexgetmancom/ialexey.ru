@@ -234,6 +234,36 @@ const schemaObject = {
       "inLanguage": "ru-RU",
       "publisher": { "@id": "https://ialexey.ru/#person" }
     },
+    {
+      "@type": "FAQPage",
+      "@id": "https://ialexey.ru/#faq",
+      "mainEntity": [
+        {
+          "@type": "Question",
+          "name": "Кто такой Алексей Гетманец?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Алексей Гетманец — исследователь ИИ, разработчик и блогер, делящийся свежими новостями, сливами и инсайдами из мира нейросетей."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Откуда берутся сливы и новости ИИ?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Информация собирается из открытых источников, закрытых бета-веток продуктов, каналов разработчиков и сообществ в Telegram."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Как подписаться на обновления?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Вы можете читать новости на этом сайте, подписаться на Telegram-канал @iAlexeyRu или использовать RSS-ленту."
+          }
+        }
+      ]
+    },
     ...(sortedItems.length > 0 ? [{
       "@type": "ItemList",
       "@id": "https://ialexey.ru/#telegram-feed",
@@ -587,7 +617,7 @@ const sidebarItems = sortedItems;
                                       <img 
                                           src={item.image.startsWith('http') ? item.image : `/${item.image}`} 
                                           class="article-row__img" 
-                                          alt="Обложка статьи" 
+                                          alt={title} 
                                           loading="lazy"
                                       />
                                   ) : (
@@ -673,6 +703,39 @@ const sidebarItems = sortedItems;
           </aside>
       )}
   </div>
+
+   <!-- FAQ Section (AEO/SEO optimized) -->
+    <section class="faq-section faq-section--collapsed" id="faq">
+        <div class="faq-header-row">
+            <h2 class="section-title" style="margin: 0;">Часто задаваемые вопросы (FAQ)</h2>
+            <button id="toggle-faq-btn" class="toggle-faq-btn" aria-label="Свернуть блок">
+                <span class="faq-toggle-text">Развернуть</span>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="faq-toggle-icon"><path d="m18 15-6-6-6 6"/></svg>
+            </button>
+        </div>
+        <div class="faq-body-collapsible" id="faq-body-collapsible">
+            <div class="faq-list">
+                <div class="faq-item">
+                    <h3 class="faq-question">Кто такой Алексей Гетманец?</h3>
+                    <p class="faq-answer">
+                        Алексей Гетманец — исследователь ИИ, разработчик и блогер, делящийся свежими новостями, сливами и инсайдами из мира нейросетей.
+                    </p>
+                </div>
+                <div class="faq-item">
+                    <h3 class="faq-question">Откуда берутся сливы и новости ИИ?</h3>
+                    <p class="faq-answer">
+                        Информация собирается из открытых источников, закрытых бета-веток продуктов, каналов разработчиков и различных сообществ в Telegram.
+                    </p>
+                </div>
+                <div class="faq-item">
+                    <h3 class="faq-question">Как подписаться на обновления?</h3>
+                    <p class="faq-answer">
+                        Вы можете читать новости на этом сайте, подписаться на Telegram-канал <a href="https://t.me/iAlexeyRu" target="_blank" rel="noopener">@iAlexeyRu</a> или использовать <a href="/feed.xml">RSS-ленту</a>.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
 
 </Layout>
 
@@ -1403,6 +1466,113 @@ const sidebarItems = sortedItems;
           gap: 1.5rem;
       }
   }
+
+  /* FAQ SECTION (AEO/SEO optimized) */
+  .faq-section {
+      margin-top: 4rem;
+      border-top: 1px solid var(--border);
+      padding-top: 3rem;
+  }
+
+  .faq-list {
+      display: grid;
+      gap: 1.5rem;
+      margin-top: 1.5rem;
+  }
+
+  .faq-item {
+      background-color: var(--card-bg);
+      border: 1px solid var(--border);
+      padding: 0;
+      border-radius: 12px;
+      transition: border-color 0.25s ease, box-shadow 0.25s ease;
+      overflow: hidden;
+  }
+
+  .faq-item:hover {
+      border-color: var(--border-hover);
+      box-shadow: 0 4px 15px var(--accent-glow);
+  }
+
+  /* FAQ main collapse styles */
+  .faq-header-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 1.5rem;
+      transition: margin 0.3s ease;
+  }
+
+  .faq-section--collapsed .faq-header-row {
+      margin-bottom: 0;
+  }
+
+  .toggle-faq-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      background: transparent;
+      border: none;
+      color: #6c7482;
+      font-family: var(--font-mono);
+      font-size: 0.72rem;
+      cursor: pointer;
+      padding: 4px 8px;
+      border-radius: 4px;
+      transition: all 0.2s ease;
+  }
+
+  .toggle-faq-btn:hover {
+      color: var(--text-header);
+      background-color: var(--border-soft);
+  }
+
+  .faq-toggle-icon {
+      width: 14px;
+      height: 14px;
+      transition: transform 0.3s ease;
+  }
+
+  /* Rotate icon when collapsed (arrow pointing down) */
+  .faq-section--collapsed .faq-toggle-icon {
+      transform: rotate(180deg);
+  }
+
+  .faq-body-collapsible {
+      max-height: 1200px;
+      overflow: hidden;
+      transition: max-height 0.4s cubic-bezier(0, 1, 0, 1);
+  }
+
+  .faq-section--collapsed .faq-body-collapsible {
+      max-height: 0;
+  }
+
+  .faq-question {
+      margin: 0;
+      padding: 1.5rem 1.5rem 0.5rem;
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: var(--text-header);
+  }
+
+  .faq-answer {
+      margin: 0;
+      padding: 0 1.5rem 1.5rem;
+      font-size: 0.95rem;
+      line-height: 1.6;
+      color: var(--text-main);
+  }
+
+  .faq-answer a {
+      color: var(--accent);
+      text-decoration: none;
+      border-bottom: 1px dashed var(--accent);
+  }
+
+  .faq-answer a:hover {
+      border-bottom-style: solid;
+  }
 </style>
 
 <script>
@@ -1543,6 +1713,29 @@ const sidebarItems = sortedItems;
               const isCollapsed = streamBlock.classList.toggle('stream-banner--collapsed');
               toggleText.textContent = isCollapsed ? 'Развернуть' : 'Свернуть';
           });
+      }
+  }
+
+  // FAQ Collapse Toggle
+  const faqSection = document.getElementById('faq');
+  const toggleFaqBtn = document.getElementById('toggle-faq-btn');
+  const faqToggleText = toggleFaqBtn?.querySelector('.faq-toggle-text');
+
+  if (faqSection && toggleFaqBtn && faqToggleText) {
+      const toggleFAQ = () => {
+          const isCollapsed = faqSection.classList.toggle('faq-section--collapsed');
+          faqToggleText.textContent = isCollapsed ? 'Развернуть' : 'Свернуть';
+      };
+      
+      toggleFaqBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          toggleFAQ();
+      });
+
+      const faqHeaderRow = faqSection.querySelector('.faq-header-row');
+      if (faqHeaderRow) {
+          faqHeaderRow.style.cursor = 'pointer';
+          faqHeaderRow.addEventListener('click', toggleFAQ);
       }
   }
 </script>

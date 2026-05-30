@@ -13,6 +13,31 @@ const {
   canonicalUrl = Astro.url.href
 } = Astro.props;
 
+function removeLeadingEmoji(text: string) {
+  if (!text) return "";
+  let cleaned = text.trim();
+  
+  // 1. Regional indicators (flags)
+  const flagMatch = cleaned.match(/^(\p{RI}{2})\s*/u);
+  if (flagMatch) {
+    return cleaned.slice(flagMatch[1].length).trim();
+  }
+  
+  // 2. Emojis with ZWJ and variant selectors
+  const baseEmojiPart = `(?:[^\\s\\w\\d.,!?;:()""''«»а-яА-ЯёЁa-zA-Z][\\ufe00-\\ufe0f\\u20e3]?|[\\ud83c][\\udffb-\\udfff]?)`;
+  const zwjRegex = new RegExp(`^(?:${baseEmojiPart}(?:\\u200d${baseEmojiPart})*)`, 'u');
+  
+  const match = cleaned.match(zwjRegex);
+  if (match && match[0]) {
+    const symbol = match[0];
+    if (/\p{Emoji}/u.test(symbol) && !/^[#*0-9]$/.test(symbol[0])) {
+      return cleaned.slice(symbol.length).trim();
+    }
+  }
+  return cleaned;
+}
+
+const cleanDescription = removeLeadingEmoji(description);
 const siteAuthor = "Алексей Гетманец";
 const publicBaseUrl = "https://ialexey.ru";
 ---
@@ -22,7 +47,7 @@ const publicBaseUrl = "https://ialexey.ru";
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{title}</title>
-    <meta name="description" content={description}>
+    <meta name="description" content={cleanDescription}>
     <meta name="robots" content="index, follow">
     <link rel="icon" type="image/png" href="/avatar.png">
     <link rel="canonical" href={canonicalUrl}>
@@ -39,14 +64,14 @@ const publicBaseUrl = "https://ialexey.ru";
     <meta property="og:type" content="website">
     <meta property="og:site_name" content={siteAuthor}>
     <meta property="og:title" content={title}>
-    <meta property="og:description" content={description}>
+    <meta property="og:description" content={cleanDescription}>
     <meta property="og:url" content={canonicalUrl}>
     <meta property="og:image" content={`${publicBaseUrl}/avatar.png`}>
 
     <!-- Twitter -->
     <meta name="twitter:card" content="summary">
     <meta name="twitter:title" content={title}>
-    <meta name="twitter:description" content={description}>
+    <meta name="twitter:description" content={cleanDescription}>
     <meta name="twitter:image" content={`${publicBaseUrl}/avatar.png`}>
 
     {schema && <script type="application/ld+json" set:html={schema}></script>}
