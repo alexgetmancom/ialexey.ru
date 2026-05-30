@@ -2,6 +2,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import Layout from '../layouts/Layout.astro';
+import habrFallback from '../data/habr.json';
 
 // Configuration
 const channelUsername = "iAlexeyRu";
@@ -164,6 +165,35 @@ function truncateText(value: string, limit: number) {
   }
   return text.slice(0, Math.max(0, limit - 1)).trimEnd() + "…";
 }
+function removeLeadingEmoji(text: string) {
+  if (!text) return "";
+  let cleaned = text.trim();
+  
+  // 1. Regional indicators (flags)
+  const flagMatch = cleaned.match(/^(\p{RI}{2})\s*/u);
+  if (flagMatch) {
+    return cleaned.slice(flagMatch[1].length).trim();
+  }
+  
+  // 2. Emojis with ZWJ and variant selectors
+  const baseEmojiPart = `(?:[^\\s\\w\\d.,!?;:()""''«»а-яА-ЯёЁa-zA-Z][\\ufe00-\\ufe0f\\u20e3]?|[\\ud83c][\\udffb-\\udfff]?)`;
+  const zwjRegex = new RegExp(`^(?:${baseEmojiPart}(?:\\u200d${baseEmojiPart})*)`, 'u');
+  
+  const match = cleaned.match(zwjRegex);
+  if (match && match[0]) {
+    const symbol = match[0];
+    if (/\p{Emoji}/u.test(symbol) && !/^[#*0-9]$/.test(symbol[0])) {
+      return cleaned.slice(symbol.length).trim();
+    }
+  }
+  return cleaned;
+}
+
+function cleanArticleTitle(title: string) {
+  if (!title) return "";
+  return title.replace(/^\[Перевод\]\s*/i, "").trim();
+}
+
 
 // Smart classification of category badges
 function getSmartBadge(text: string) {
@@ -220,129 +250,360 @@ const schemaObject = {
 
 const schema = JSON.stringify(schemaObject);
 
-// 1. "Главное на сегодня" (Top 5 most important/recent posts)
-const mainFeaturedItems = sortedItems.slice(0, 5);
+// Fetch Telegram public page HTML to get latest views count
+let viewsMap = new Map();
+try {
+  const tmeRes = await fetch('https://t.me/s/iAlexeyRu', {
+    headers: {
+      'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+    }
+  });
+  if (tmeRes.ok) {
+    const htmlText = await tmeRes.text();
+    const messageBlocks = htmlText.split('<div class="tgme_widget_message_wrap');
+    for (const block of messageBlocks) {
+      const idMatch = block.match(/data-post="iAlexeyRu\/(\d+)"/);
+      if (idMatch) {
+        const messageId = parseInt(idMatch[1]);
+        const viewsMatch = block.match(/class="tgme_widget_message_views"[^>]*>([^<]+)<\/span>/);
+        if (viewsMatch) {
+          const viewsRaw = viewsMatch[1].trim();
+          let views = 0;
+          const upper = viewsRaw.toUpperCase();
+          if (upper.endsWith('K')) {
+            views = Math.round(parseFloat(upper.slice(0, -1)) * 1000);
+          } else if (upper.endsWith('M')) {
+            views = Math.round(parseFloat(upper.slice(0, -1)) * 1000000);
+          } else {
+            views = parseInt(upper.replace(/\s/g, '').replace(/,/g, '')) || 0;
+          }
+          viewsMap.set(messageId, views);
+        }
+      }
+    }
+  }
+} catch (e) {
+  console.error('Error fetching Telegram views in index.astro build:', e);
+}
 
-// 2. "Статьи" - main posts (we filter posts with images, or render all as dynamic cards in the grid)
-const articleItems = sortedItems.filter(item => item.image || item.text.length > 80);
+function formatViewsCount(views: number) {
+  if (!views) return "0";
+  if (views >= 1000000) {
+    return (views / 1000000).toFixed(1).replace('.0', '') + 'M';
+  }
+  if (views >= 1000) {
+    return (views / 1000).toFixed(1).replace('.0', '') + 'K';
+  }
+  return views.toString();
+}
+
+// 1. "Главные новости" (Top 5 ranked by Telegram views, filtered to last 7 days candidates)
+const sevenDaysAgo = new Date();
+sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+
+// Filter candidates: posts from the last 7 days
+let featuredCandidates = sortedItems.filter(item => {
+  const itemDate = new Date(item.date);
+  return itemDate >= sevenDaysAgo;
+});
+
+// Fallback to all items if there are fewer than 5 candidates in the last 7 days
+if (featuredCandidates.length < 5) {
+  featuredCandidates = sortedItems;
+}
+
+// Attach views from viewsMap to candidates
+const candidatesWithViews = featuredCandidates.map(item => {
+  const messageId = item.message_id || parseInt(item.id.split(':').pop());
+  const views = viewsMap.get(messageId) || 0;
+  return { ...item, views };
+});
+
+// Sort by views count descending, then take top 5
+const mainFeaturedItems = candidatesWithViews
+  .sort((a, b) => b.views - a.views)
+  .slice(0, 5);
+
+// 2. "Статьи" - Fetch Habr articles at build time, fallback to local JSON
+let articleItems = [];
+try {
+  const habrRes = await fetch('https://habr.com/ru/rss/users/iAlexeyRu/articles/?fl=ru', {
+    headers: {
+      'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+    }
+  });
+  if (habrRes.ok) {
+    const xml = await habrRes.text();
+    const itemRegex = /<item>([\s\S]*?)<\/item>/g;
+    let match;
+    const parsedArticles = [];
+    
+    while ((match = itemRegex.exec(xml)) !== null) {
+      const itemXml = match[1];
+      
+      const titleMatch = itemXml.match(/<title><!\[CDATA\[([\s\S]*?)\]\]><\/title>/) || itemXml.match(/<title>([\s\S]*?)<\/title>/);
+      const linkMatch = itemXml.match(/<guid[^>]*>([\s\S]*?)<\/guid>/) || itemXml.match(/<link>([\s\S]*?)<\/link>/);
+      const dateMatch = itemXml.match(/<pubDate>([\s\S]*?)<\/pubDate>/);
+      const descMatch = itemXml.match(/<description><!\[CDATA\[([\s\S]*?)\]\]><\/description>/) || itemXml.match(/<description>([\s\S]*?)<\/description>/);
+      
+      if (titleMatch && linkMatch) {
+        const title = titleMatch[1].trim();
+        let link = linkMatch[1].trim();
+        if (link.includes('?')) {
+          link = link.split('?')[0];
+        }
+        
+        const date = dateMatch ? new Date(dateMatch[1]).toISOString() : new Date().toISOString();
+        const rawDesc = descMatch ? descMatch[1] : '';
+        
+        // Extract image
+        const imgMatch = rawDesc.match(/<img[^>]+src="([^"]+)"/);
+        const image = imgMatch ? imgMatch[1] : '';
+        
+        // Clean description text
+        let desc = rawDesc.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+        desc = desc.replace(/Читать далее$/, '').trim();
+        
+        // Extract categories
+        const catRegex = /<category>(?:<!\[CDATA\[)?([\s\S]*?)(?:\]\]>)?<\/category>/g;
+        let catMatch;
+        const categories = [];
+        while ((catMatch = catRegex.exec(itemXml)) !== null) {
+          categories.push(catMatch[1].trim());
+        }
+        
+        parsedArticles.push({
+          title,
+          url: link,
+          date,
+          image,
+          desc,
+          categories: categories.slice(0, 2)
+        });
+      }
+    }
+    
+    if (parsedArticles.length > 0) {
+      articleItems = parsedArticles;
+    }
+  }
+} catch (e) {
+  console.error('Failed to fetch Habr RSS feed at build time:', e);
+}
+
+if (articleItems.length === 0) {
+  articleItems = habrFallback;
+}
+
+// Fetch views for Habr articles in parallel with a 3s timeout
+try {
+  articleItems = await Promise.all(articleItems.map(async (item) => {
+    if (item.url && item.url.includes('habr.com')) {
+      try {
+        const pageRes = await fetch(item.url, {
+          headers: {
+            'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+          },
+          signal: AbortSignal.timeout(3000)
+        });
+        if (pageRes.ok) {
+          const html = await pageRes.text();
+          const viewsMatch = html.match(/<span class="tm-icon-counter__value"\s+title="(\d+)"[^>]*>/)
+                          || html.match(/<span class="tm-icon-counter__value"[^>]*>([\s\S]*?)<\/span>/);
+          if (viewsMatch) {
+            const val = viewsMatch[1].trim();
+            let views = 0;
+            if (/^\d+$/.test(val)) {
+              views = parseInt(val, 10);
+            } else {
+              const upper = val.toUpperCase();
+              if (upper.endsWith('K')) {
+                views = Math.round(parseFloat(upper.slice(0, -1)) * 1000);
+              } else if (upper.endsWith('M')) {
+                views = Math.round(parseFloat(upper.slice(0, -1)) * 1000000);
+              } else {
+                views = parseInt(upper.replace(/\s/g, '').replace(/,/g, '')) || 0;
+              }
+            }
+            return { ...item, views };
+          }
+        }
+      } catch (e: any) {
+        console.error(`Failed to fetch views for Habr article ${item.url}:`, e.message || e);
+      }
+    }
+    return item;
+  }));
+} catch (e) {
+  console.error('Failed fetching Habr views in parallel:', e);
+}
 
 // 3. "Лента всех новостей" (Full list for the sidebar, aligned with mainFeaturedItems height)
 const sidebarItems = sortedItems;
 ---
 <Layout title={siteTitle} description={siteDescription} schema={schema}>
 
-  <div class="page-layout-grid">
+    <div class="page-layout-grid">
       
-      <!-- LEFT COLUMN: MAIN CONTENT (Main + Stream + Articles) -->
+      <!-- ROW 1 LEFT: ГЛАВНЫЕ НОВОСТИ -->
       <div class="main-content-col">
-          
-          <!-- BLOCK 1: ГЛАВНОЕ НА СЕГОДНЯ (Compact single-line list) -->
+          <!-- BLOCK 1: ГЛАВНЫЕ НОВОСТИ (Premium article row layout without images) -->
           {mainFeaturedItems.length > 0 && (
-              <div class="today-featured-card">
-                  <h2 class="featured-card-title">Главное на сегодня</h2>
+              <div class="today-featured-card" id="featured-news">
+                  <h2 class="featured-card-title">Главные новости</h2>
                   <div class="featured-list">
                       {mainFeaturedItems.map((item) => {
                           const timeStr = formatTimeOnly(item.date);
-                          const title = truncateText(item.text || "", 115) || `Новость из Telegram ${item.message_id}`;
+                          const title = truncateText(removeLeadingEmoji(item.text || ""), 105) || `Новость из Telegram ${item.message_id}`;
                           const postUrl = getPostPath(item);
                           return (
                               <a href={postUrl} class="featured-item-link">
                                   <span class="featured-item-time">{timeStr}</span>
                                   <span class="featured-item-text">{title}</span>
+                                  {item.views > 0 && (
+                                      <span class="featured-item-views" title="Просмотры в Telegram">
+                                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="views-icon"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+                                          {formatViewsCount(item.views)}
+                                      </span>
+                                  )}
                               </a>
                           );
                       })}
                   </div>
               </div>
           )}
-
-          <!-- BLOCK 2: СТРИМ МОЙ (Premium Live Stream Box - Minimalist with YouTube fallback) -->
-          <div class="stream-banner" id="stream-block" data-youtube-id={latestCompletedVideoId}>
-              <div class="stream-header-row">
-                  <div class="stream-title-wrap">
-                      <span class="stream-status-dot" id="stream-status-dot"></span>
-                      <span class="stream-status-text" id="stream-status-text">Загрузка трансляции...</span>
-                  </div>
-                  <button id="toggle-stream-btn" class="toggle-stream-btn" aria-label="Свернуть блок">
-                      <span class="toggle-text">Свернуть</span>
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="toggle-icon"><path d="m18 15-6-6-6 6"/></svg>
-                  </button>
-              </div>
-              <div class="stream-body-collapsible" id="stream-body-collapsible">
-                  <!-- Responsive Video Embed Container -->
-                  <div class="stream-embed-container" id="stream-embed-container">
-                      <!-- Embed will be dynamically injected by JS below -->
-                  </div>
-              </div>
-          </div>
-
-          <!-- BLOCK 3: СТАТЬИ (Horizontal Row list - Championat style) -->
-          <section class="articles-section">
-              <h2 class="section-title">Статьи</h2>
-              {articleItems.length === 0 ? (
-                  <div class="telegram-feed__empty" style="padding: 3rem; text-align: center;">Постов пока нет. Новые посты появятся здесь автоматически!</div>
-              ) : (
-                  <div class="articles-list">
-                      {articleItems.map((item, index) => {
-                          const badge = getSmartBadge(item.text);
-                          const dateStr = formatDateRussian(item.date);
-                          const title = truncateText(item.text || "", 86) || `Пост Telegram ${item.message_id}`;
-                          const desc = truncateText(item.text || "", 180);
-                          const postUrl = getPostPath(item);
-                          const isHidden = index >= 5;
-                          return (
-                              <a href={postUrl} class={`article-row ${isHidden ? 'article-row--hidden' : ''}`}>
-                                  <div class="article-row__img-container">
-                                      {item.image ? (
-                                          <img 
-                                              src={`/${item.image}`} 
-                                              class="article-row__img" 
-                                              alt="Обложка статьи" 
-                                              loading="lazy"
-                                          />
-                                      ) : (
-                                          <div class="article-row__placeholder-img">
-                                              <span class="placeholder-emoji">{badge.emoji}</span>
-                                          </div>
-                                      )}
-                                      <span class={`article-row__badge-overlay badge ${badge.class}`}>{badge.label}</span>
-                                  </div>
-                                  <div class="article-row__content">
-                                      <h3 class="article-row__title">{title}</h3>
-                                      <p class="article-row__desc">{desc}</p>
-                                      <div class="article-row__meta-row">
-                                          <span class="article-row__date">{dateStr}</span>
-                                      </div>
-                                  </div>
-                              </a>
-                          );
-                      })}
-                  </div>
-              )}
-
-              {articleItems.length > 5 && (
-                  <div class="articles-show-more-wrap">
-                      <button id="show-more-btn" class="show-more-btn">
-                          <span>Смотреть все</span>
-                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="show-more-btn__icon"><path d="m6 9 6 6 6-6"/></svg>
-                      </button>
-                  </div>
-              )}
-          </section>
-
       </div>
 
-      <!-- RIGHT COLUMN: SIDEBAR LENTA (Championat.com style) -->
+      <!-- ROW 1 RIGHT: СТРИМ МОЙ -->
       {sidebarItems.length > 0 && (
           <aside class="sidebar-col">
-              <div class="sidebar-header">
-                  <h2 class="sidebar-main-title">Лента всех новостей</h2>
+              <!-- BLOCK 2: СТРИМ МОЙ (Premium Live Stream Box - Minimalist with YouTube fallback) -->
+              <div class="stream-banner" id="stream-block" data-youtube-id={latestCompletedVideoId}>
+                  <div class="stream-header-row">
+                      <div class="stream-title-wrap">
+                          <span class="stream-status-dot" id="stream-status-dot"></span>
+                          <span class="stream-status-text" id="stream-status-text">Загрузка трансляции...</span>
+                      </div>
+                      <button id="toggle-stream-btn" class="toggle-stream-btn" aria-label="Свернуть блок">
+                          <span class="toggle-text">Свернуть</span>
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="toggle-icon"><path d="m18 15-6-6-6 6"/></svg>
+                      </button>
+                  </div>
+                  <div class="stream-body-collapsible" id="stream-body-collapsible">
+                      <!-- Responsive Video Embed Container -->
+                      <div class="stream-embed-container" id="stream-embed-container">
+                          <!-- Embed will be dynamically injected by JS below -->
+                      </div>
+                  </div>
+              </div>
+          </aside>
+      )}
+
+      <!-- ROW 2 LEFT: СТАТЬИ -->
+      <section class="articles-section" id="articles">
+          <h2 class="section-title">Статьи</h2>
+          {articleItems.length === 0 ? (
+              <div class="telegram-feed__empty" style="padding: 3rem; text-align: center;">Постов пока нет. Новые посты появятся здесь автоматически!</div>
+          ) : (
+              <div class="articles-list">
+                  {articleItems.map((item, index) => {
+                      const dateStr = formatDateRussian(item.date);
+                      const title = truncateText(cleanArticleTitle(item.title || item.text || ""), 86);
+                      const desc = truncateText(item.desc || item.text || "", 180);
+                      const isHabr = !!item.url;
+                      const postUrl = isHabr ? item.url : getPostPath(item);
+                      const isHidden = index >= 5;
+                      
+                      // Determine badge dynamically or from Habr categories
+                      let badge = { label: "Статьи", class: "badge--news", emoji: "📰" };
+                      if (item.categories && item.categories.length > 0) {
+                          const label = item.categories[0];
+                          let badgeClass = "badge--neural";
+                          let emoji = "🧠";
+                          const l = label.toLowerCase();
+                          if (l.includes("реверс") || l.includes("reverse") || l.includes("слив")) {
+                              badgeClass = "badge--leaks";
+                              emoji = "🤫";
+                          } else if (l.includes("ии") || l.includes("ai") || l.includes("codex") || l.includes("модел")) {
+                              badgeClass = "badge--ai";
+                              emoji = "🧠";
+                          }
+                          badge = { label, class: badgeClass, emoji };
+                      } else if (item.text) {
+                          badge = getSmartBadge(item.text);
+                      }
+                      
+                      return (
+                          <a 
+                              href={postUrl} 
+                              class={`article-row ${isHidden ? 'article-row--hidden' : ''}`}
+                              target={isHabr ? "_blank" : undefined}
+                              rel={isHabr ? "noopener noreferrer" : undefined}
+                          >
+                              <div class="article-row__img-container">
+                                  {item.image ? (
+                                      <img 
+                                          src={item.image.startsWith('http') ? item.image : `/${item.image}`} 
+                                          class="article-row__img" 
+                                          alt="Обложка статьи" 
+                                          loading="lazy"
+                                      />
+                                  ) : (
+                                      <div class="article-row__placeholder-img">
+                                          <span class="placeholder-emoji">{badge.emoji}</span>
+                                      </div>
+                                  )}
+                                  <span class={`article-row__badge-overlay badge ${badge.class}`}>{badge.label}</span>
+                              </div>
+                              <div class="article-row__content">
+                                  <h3 class="article-row__title">{title}</h3>
+                                  <p class="article-row__desc">{desc}</p>
+                                  <div class="article-row__meta-row">
+                                      <span class="article-row__date">{dateStr}</span>
+                                      {isHabr && (
+                                          <>
+                                              <span class="article-row__meta-divider">•</span>
+                                              <span class="article-row__source-label">Habr</span>
+                                          </>
+                                      )}
+                                      {item.views > 0 && (
+                                          <>
+                                              <span class="article-row__meta-divider">•</span>
+                                              <span class="article-row__views" title="Просмотры на Habr">
+                                                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="views-icon"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+                                                  {formatViewsCount(item.views)}
+                                              </span>
+                                          </>
+                                      )}
+                                  </div>
+                              </div>
+                          </a>
+                      );
+                  })}
+              </div>
+          )}
+
+          {articleItems.length > 5 && (
+              <div class="articles-show-more-wrap">
+                  <button id="show-more-btn" class="show-more-btn">
+                      <span>Смотреть все</span>
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="show-more-btn__icon"><path d="m6 9 6 6 6-6"/></svg>
+                  </button>
+              </div>
+          )}
+      </section>
+
+      <!-- ROW 2 RIGHT: ВСЕ НОВОСТИ -->
+      {sidebarItems.length > 0 && (
+          <aside class="sidebar-col" id="news">
+              <div class="sidebar-header" style="margin-top: 0;">
+                  <h2 class="sidebar-main-title">Все новости</h2>
               </div>
               
               <div class="sidebar-list">
                   {sidebarItems.map((item, index) => {
                       const timeStr = formatTimeOnly(item.date);
-                      const title = truncateText(item.text || "", 120) || `Обновление ленты ${item.message_id}`;
+                      const title = truncateText(removeLeadingEmoji(item.text || ""), 120) || `Обновление ленты ${item.message_id}`;
                       const postUrl = getPostPath(item);
                       const isHidden = index >= 10;
                       return (
@@ -364,7 +625,6 @@ const sidebarItems = sortedItems;
               )}
           </aside>
       )}
-
   </div>
 
 </Layout>
@@ -386,21 +646,18 @@ const sidebarItems = sortedItems;
 
   /* 1. ГЛАВНОЕ НА СЕГОДНЯ BOX - COMPACT */
   .today-featured-card {
-      background-color: var(--card-bg);
-      border: 1px solid var(--border);
-      border-radius: 16px;
-      padding: 0.9rem 1.15rem;
+      background-color: transparent;
+      border: none;
+      padding: 0;
   }
 
   .featured-card-title {
       font-size: 1.15rem;
-      margin: 0 0 0.85rem;
+      margin: 0 0 1.25rem;
       font-family: var(--font-heading);
       font-weight: 700;
       color: var(--text-header);
-      text-transform: uppercase;
-      letter-spacing: 0.02em;
-      border-left: 3px solid var(--accent);
+      border-left: 2px solid var(--accent);
       padding-left: 0.6rem;
   }
 
@@ -413,7 +670,7 @@ const sidebarItems = sortedItems;
       display: flex;
       align-items: center;
       gap: 0.75rem;
-      padding: 0.4rem 0;
+      padding: 12px 0;
       border-bottom: 1px solid var(--border-soft);
       transition: all 0.2s ease;
   }
@@ -452,6 +709,24 @@ const sidebarItems = sortedItems;
 
   .featured-item-link:hover {
       transform: translateX(4px);
+  }
+
+  .featured-item-views {
+      font-family: var(--font-mono);
+      font-size: 0.72rem;
+      color: var(--text-muted);
+      display: inline-flex;
+      align-items: center;
+      gap: 0.25rem;
+      margin-left: auto;
+      flex-shrink: 0;
+      padding-left: 0.5rem;
+  }
+
+  .views-icon {
+      width: 12px;
+      height: 12px;
+      opacity: 0.7;
   }
 
   /* 2. PREMIUM STREAM BANNER WITH YOUTUBE FALLBACK */
@@ -686,14 +961,12 @@ const sidebarItems = sortedItems;
 
   /* 3. ARTICLES SECTION TITLE & GRID */
   .section-title {
-      font-size: 1.5rem;
-      margin: 0 0 1.5rem;
+      font-size: 1.15rem;
+      margin: 0 0 1.25rem;
       font-family: var(--font-heading);
       font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.02em;
-      border-left: 3px solid var(--accent);
-      padding-left: 0.75rem;
+      border-left: 2px solid var(--accent);
+      padding-left: 0.6rem;
       color: var(--text-header);
   }
 
@@ -807,6 +1080,30 @@ const sidebarItems = sortedItems;
       color: var(--text-muted);
   }
 
+  .article-row__meta-divider {
+      color: var(--text-muted);
+      font-size: 0.72rem;
+      opacity: 0.6;
+  }
+
+  .article-row__source-label {
+      font-family: var(--font-mono);
+      font-size: 0.72rem;
+      color: var(--accent);
+      text-transform: uppercase;
+      font-weight: bold;
+      letter-spacing: 0.5px;
+  }
+
+  .article-row__views {
+      font-family: var(--font-mono);
+      font-size: 0.72rem;
+      color: var(--text-muted);
+      display: inline-flex;
+      align-items: center;
+      gap: 0.25rem;
+  }
+
   @media (max-width: 600px) {
       .article-row {
           flex-direction: column;
@@ -822,28 +1119,26 @@ const sidebarItems = sortedItems;
   .sidebar-col {
       display: flex;
       flex-direction: column;
-      background-color: var(--card-bg);
-      border: 1px solid var(--border);
-      border-radius: 16px;
-      padding: 0.9rem 1.15rem;
+      background-color: transparent;
+      border: none;
+      padding: 0;
       min-width: 0; /* Allow clean resizing */
       height: fit-content;
   }
 
   .sidebar-header {
-      padding-bottom: 0.85rem;
-      border-bottom: 2px solid var(--accent);
-      margin-bottom: 0.75rem;
+      margin-top: 2.25rem;
+      margin-bottom: 1.25rem;
   }
 
   .sidebar-main-title {
-      font-size: 1.1rem;
+      font-size: 1.15rem;
       margin: 0;
       font-family: var(--font-heading);
       font-weight: 700;
       color: var(--text-header);
-      text-transform: uppercase;
-      letter-spacing: 0.02em;
+      border-left: 2px solid var(--accent);
+      padding-left: 0.6rem;
   }
 
   .sidebar-list {
@@ -855,7 +1150,7 @@ const sidebarItems = sortedItems;
       display: flex;
       align-items: flex-start;
       gap: 0.75rem;
-      padding: 14px 0;
+      padding: 12px 0;
       border-bottom: 1px dashed var(--border-dashed);
       transition: all 0.2s ease;
   }
@@ -880,7 +1175,7 @@ const sidebarItems = sortedItems;
       font-weight: 500;
       flex-grow: 1;
       display: -webkit-box;
-      -webkit-line-clamp: 3;
+      -webkit-line-clamp: 2;
       -webkit-box-orient: vertical;
       overflow: hidden;
   }
