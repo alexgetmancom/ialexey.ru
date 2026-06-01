@@ -15,6 +15,18 @@ async function exists(filePath) {
   }
 }
 
+async function needsUpdate(inputPath, outputPath) {
+  try {
+    const [inputStat, outputStat] = await Promise.all([
+      fs.stat(inputPath),
+      fs.stat(outputPath),
+    ]);
+    return outputStat.mtimeMs < inputStat.mtimeMs;
+  } catch {
+    return true;
+  }
+}
+
 async function generateHabrImages() {
   if (!(await exists(habrDir))) {
     return;
@@ -37,6 +49,9 @@ async function generateHabrImages() {
         continue;
       }
       const outputPath = path.join(habrDir, `${parsed.name}-${width}.webp`);
+      if (!(await needsUpdate(inputPath, outputPath))) {
+        continue;
+      }
       await sharp(inputPath)
         .resize({ width, withoutEnlargement: true })
         .webp({ quality: 74, effort: 6 })
@@ -51,10 +66,15 @@ async function generateAvatar() {
     return;
   }
 
+  const outputPath = path.join(root, 'public', 'avatar-small.webp');
+  if (!(await needsUpdate(inputPath, outputPath))) {
+    return;
+  }
+
   await sharp(inputPath)
     .resize({ width: 72, height: 72, fit: 'cover' })
     .webp({ quality: 76, effort: 6 })
-    .toFile(path.join(root, 'public', 'avatar-small.webp'));
+    .toFile(outputPath);
 }
 
 await generateHabrImages();
