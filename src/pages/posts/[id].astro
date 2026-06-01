@@ -203,22 +203,32 @@ const schema = JSON.stringify(schemaObject);
           <!-- Divider -->
           <div class="post-divider"></div>
 
-          <!-- Share Bar -->
+          <!-- Share Bar with Likes -->
           <div class="share-bar">
-              <span class="share-title">Поделиться:</span>
-              <div class="share-buttons">
-                  <a href={`https://t.me/share/url?url=${encodeURIComponent(localUrl)}&text=${encodeURIComponent(postTitle)}`} target="_blank" rel="noopener noreferrer" class="share-btn share-btn--telegram" aria-label="Поделиться в Telegram">
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="share-btn-icon tg-icon-stroke"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg>
-                      <span>Telegram</span>
-                  </a>
-                  <a href={`https://twitter.com/intent/tweet?url=${encodeURIComponent(localUrl)}&text=${encodeURIComponent(postTitle)}`} target="_blank" rel="noopener noreferrer" class="share-btn share-btn--twitter" aria-label="Поделиться в X">
-                      <svg viewBox="0 0 24 24" fill="currentColor" class="share-btn-icon"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
-                      <span>X (Twitter)</span>
-                  </a>
-                  <button class="share-btn share-btn--copy" id="copy-link-btn" data-url={localUrl} aria-label="Скопировать ссылку">
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="share-btn-icon"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
-                      <span id="copy-btn-text">Ссылка</span>
+              <div class="likes-container">
+                  <button class="like-btn" id="like-btn" data-post-id={id} aria-label="Поставить лайк">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="like-btn-icon">
+                          <path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/>
+                      </svg>
+                      <span id="like-count">0</span>
                   </button>
+              </div>
+              <div class="share-buttons-wrap">
+                  <span class="share-title">Поделиться:</span>
+                  <div class="share-buttons">
+                      <a href={`https://t.me/share/url?url=${encodeURIComponent(localUrl)}&text=${encodeURIComponent(postTitle)}`} target="_blank" rel="noopener noreferrer" class="share-btn share-btn--telegram" aria-label="Поделиться в Telegram">
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="share-btn-icon tg-icon-stroke"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg>
+                          <span>Telegram</span>
+                      </a>
+                      <a href={`https://twitter.com/intent/tweet?url=${encodeURIComponent(localUrl)}&text=${encodeURIComponent(postTitle)}`} target="_blank" rel="noopener noreferrer" class="share-btn share-btn--twitter" aria-label="Поделиться в X">
+                          <svg viewBox="0 0 24 24" fill="currentColor" class="share-btn-icon"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+                          <span>X (Twitter)</span>
+                      </a>
+                      <button class="share-btn share-btn--copy" id="copy-link-btn" data-url={localUrl} aria-label="Скопировать ссылку">
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="share-btn-icon"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
+                          <span id="copy-btn-text">Ссылка</span>
+                      </button>
+                  </div>
               </div>
           </div>
       </article>
@@ -611,17 +621,111 @@ const schema = JSON.stringify(schemaObject);
       transform: scale(1.1);
   }
 
-  @media (max-width: 600px) {
-      .share-bar {
-          flex-direction: column;
-          align-items: flex-start;
-          gap: 0.75rem;
-      }
-      .share-buttons {
-          width: 100%;
-          justify-content: flex-start;
-      }
-  }
+    @media (max-width: 600px) {
+        .share-bar {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 1.25rem;
+        }
+        .share-buttons-wrap {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 0.5rem;
+        }
+        .share-buttons {
+            width: 100%;
+            justify-content: flex-start;
+        }
+    }
+
+    /* Comments Section */
+    .comments-section {
+        margin-top: 3rem;
+        background-color: var(--card-bg);
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        padding: 2.5rem;
+    }
+
+    .comments-title {
+        font-size: 1.15rem;
+        margin-bottom: 2rem;
+        font-family: var(--font-heading);
+        font-weight: 700;
+        color: var(--text-header);
+        border-left: 2px solid var(--accent);
+        padding-left: 0.6rem;
+    }
+
+    .giscus-container {
+        width: 100%;
+        min-height: 250px;
+    }
+
+    /* Likes Container & Button */
+    .likes-container {
+        display: flex;
+        align-items: center;
+    }
+
+    .like-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.6rem;
+        padding: 0.5rem 1.1rem;
+        border-radius: 6px;
+        font-family: var(--font-mono);
+        font-size: 0.85rem;
+        font-weight: bold;
+        cursor: pointer;
+        border: 1px solid var(--border);
+        background-color: rgba(255, 255, 255, 0.02);
+        color: var(--text-main);
+        transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .like-btn-icon {
+        width: 16px;
+        height: 16px;
+        transition: transform 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+
+    .like-btn:hover {
+        border-color: var(--accent);
+        color: var(--accent);
+        background-color: var(--accent-glow);
+    }
+
+    .like-btn:hover .like-btn-icon {
+        transform: scale(1.15);
+    }
+
+    .like-btn.liked {
+        border-color: var(--accent);
+        color: var(--accent);
+        background-color: var(--accent-glow);
+    }
+
+    .like-btn.liked .like-btn-icon {
+        fill: var(--accent);
+        stroke: var(--accent);
+        animation: heartbeat 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+
+    @keyframes heartbeat {
+        0% { transform: scale(1); }
+        35% { transform: scale(1.3); }
+        70% { transform: scale(0.9); }
+        100% { transform: scale(1); }
+    }
+
+    .share-buttons-wrap {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+    }
 </style>
 
 <script>
@@ -678,5 +782,98 @@ const schema = JSON.stringify(schemaObject);
               closeLightbox();
           }
       });
+  }
+
+  // --- Likes implementation ---
+  const likeBtn = document.getElementById('like-btn');
+  const likeCount = document.getElementById('like-count');
+  
+  if (likeBtn && likeCount) {
+      const postId = likeBtn.getAttribute('data-post-id');
+      
+      // Load initial likes count and status
+      fetch(`/api/likes?post_id=${postId}`)
+          .then(res => res.json())
+          .then(data => {
+              if (data && typeof data.likes === 'number') {
+                  likeCount.textContent = String(data.likes);
+                  if (data.user_liked) {
+                      likeBtn.classList.add('liked');
+                  }
+              }
+          })
+          .catch(err => console.error('Error fetching likes:', err));
+          
+      // Click handler
+      likeBtn.addEventListener('click', () => {
+          likeBtn.setAttribute('disabled', 'true');
+          fetch(`/api/likes?post_id=${postId}`, { method: 'POST' })
+              .then(res => res.json())
+              .then(data => {
+                  if (data && typeof data.likes === 'number') {
+                      likeCount.textContent = String(data.likes);
+                      if (data.user_liked) {
+                          likeBtn.classList.add('liked');
+                      } else {
+                          likeBtn.classList.remove('liked');
+                      }
+                  }
+              })
+              .catch(err => console.error('Error toggling like:', err))
+              .finally(() => {
+                  likeBtn.removeAttribute('disabled');
+              });
+      });
+  }
+
+  // --- Giscus comments implementation ---
+  const giscusContainer = document.getElementById('giscus-container');
+  if (giscusContainer) {
+      // Configuration object
+      const giscusConfig = {
+          repo: "iAlexeyRu/ialexey.ru",
+          repoId: "R_kgDOSJwPnQ",
+          category: "Announcements",
+          categoryId: "DIC_kwDOSJwPnc4C-S2f",
+          mapping: "pathname",
+          strict: "0",
+          reactionsEnabled: "1",
+          emitMetadata: "0",
+          inputPosition: "bottom",
+          lang: "ru",
+      };
+
+      const savedTheme = localStorage.getItem('theme') || 'dark';
+      const initialGiscusTheme = savedTheme === 'light' ? 'light' : 'dark';
+
+      const script = document.createElement('script');
+      script.src = 'https://giscus.app/client.js';
+      script.setAttribute('data-repo', giscusConfig.repo);
+      script.setAttribute('data-repo-id', giscusConfig.repoId);
+      script.setAttribute('data-category', giscusConfig.category);
+      script.setAttribute('data-category-id', giscusConfig.categoryId);
+      script.setAttribute('data-mapping', giscusConfig.mapping);
+      script.setAttribute('data-strict', giscusConfig.strict);
+      script.setAttribute('data-reactions-enabled', giscusConfig.reactionsEnabled);
+      script.setAttribute('data-emit-metadata', giscusConfig.emitMetadata);
+      script.setAttribute('data-input-position', giscusConfig.inputPosition);
+      script.setAttribute('data-theme', initialGiscusTheme);
+      script.setAttribute('data-lang', giscusConfig.lang);
+      script.crossOrigin = 'anonymous';
+      script.async = true;
+      giscusContainer.appendChild(script);
+
+      // Sync theme switch with Giscus iframe
+      const observer = new MutationObserver(() => {
+          const newTheme = document.documentElement.getAttribute('data-theme') || 'dark';
+          const iframe = document.querySelector('iframe.giscus-frame') as HTMLIFrameElement;
+          if (iframe && iframe.contentWindow) {
+              iframe.contentWindow.postMessage(
+                  { giscus: { setConfig: { theme: newTheme === 'light' ? 'light' : 'dark' } } },
+                  'https://giscus.app'
+              );
+          }
+      });
+      observer.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
   }
 </script>

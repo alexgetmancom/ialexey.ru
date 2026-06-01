@@ -32,6 +32,8 @@ MAX_ITEMS = int(os.environ.get("MAX_ITEMS", "12"))
 
 FEED_JSON = DATA_DIR / "feed.json"
 METRICS_JSON = DATA_DIR / "metrics.json"
+LIKES_DB = DATA_DIR / "likes.db"
+LIKES_LOCK = threading.Lock()
 INDEXNOW_STATE_JSON = DATA_DIR / "indexnow.json"
 INDEXNOW_KEY_FILE = DATA_DIR / "indexnow.key"
 PUBLIC_FEED_JSON = SITE_ROOT / "feed.json"
@@ -180,6 +182,102 @@ def save_metrics(data):
     data["updated_at"] = now_iso()
     text = json.dumps(data, ensure_ascii=False, indent=2, sort_keys=True) + "\n"
     atomic_write(METRICS_JSON, text, permissions=0o600)
+
+
+def init_likes_db():
+    with LIKES_LOCK:
+        import sqlite3
+        DATA_DIR.mkdir(parents=True, exist_ok=True)
+        conn = sqlite3.connect(str(LIKES_DB))
+        try:
+            conn.execute("""
+                CREATE TABLE IF NOT EXISTS likes (
+                    post_id TEXT,
+                    ip_hash TEXT,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    PRIMARY KEY (post_id, ip_hash)
+                )
+            """)
+            conn.commit()
+        finally:
+            conn.close()
+
+
+def get_ip_hash(handler):
+    ip = handler.headers.get("X-Forwarded-For", handler.client_address[0])
+    ip = ip.split(',')[0].strip()
+    salt = os.environ.get("LIKES_SALT", "ialexey-default-salt-12345")
+    return hashlib.sha256((ip + salt).encode('utf-8')).hexdigest()
+
+
+def get_likes_info(post_id, ip_hash):
+    import sqlite3
+    with LIKES_LOCK:
+        conn = sqlite3.connect(str(LIKES_DB))
+        try:
+            cursor = conn.cursor()
+            cursor.execute("SELECT COUNT(*) FROM likes WHERE post_id = ?", (post_id,))
+            count = cursor.fetchone()[0]
+            cursor.execute("SELECT 1 FROM likes WHERE post_id = ? AND ip_hash = ?", (post_id, ip_hash))
+            user_liked = cursor.fetchone() is not None
+            return {"likes": count, "user_liked": user_liked}
+        finally:
+            conn.close()
+
+
+def toggle_like(post_id, ip_hash):
+    import sqlite3
+    with LIKES_LOCK:
+        conn = sqlite3.connect(str(LIKES_DB))
+        try:
+            cursor = conn.cursor()
+            cursor.execute("SELECT 1 FROM likes WHERE post_id = ? AND ip_hash = ?", (post_id, ip_hash))
+            exists = cursor.fetchone() is not None
+            if exists:
+                cursor.execute("DELETE FROM likes WHERE post_id = ? AND ip_hash = ?", (post_id, ip_hash))
+            else:
+                cursor.execute("INSERT INTO likes (post_id, ip_hash) VALUES (?, ?)", (post_id, ip_hash))
+            conn.commit()
+            
+            cursor.execute("SELECT COUNT(*) FROM likes WHERE post_id = ?", (post_id,))
+            count = cursor.fetchone()[0]
+            return {"likes": count, "user_liked": not exists}
+        finally:
+            conn.close()
+
+
+def get_batch_likes(post_ids, ip_hash):
+    import sqlite3
+    res = {}
+    if not post_ids:
+        return res
+    for pid in post_ids:
+        res[pid] = {"likes": 0, "user_liked": False}
+        
+    with LIKES_LOCK:
+        conn = sqlite3.connect(str(LIKES_DB))
+        try:
+            cursor = conn.cursor()
+            placeholders = ",".join("?" for _ in post_ids)
+            cursor.execute(
+                f"SELECT post_id, COUNT(*) FROM likes WHERE post_id IN ({placeholders}) GROUP BY post_id",
+                post_ids
+            )
+            for row in cursor.fetchall():
+                pid, count = row
+                res[pid]["likes"] = count
+                
+            cursor.execute(
+                f"SELECT post_id FROM likes WHERE ip_hash = ? AND post_id IN ({placeholders})",
+                [ip_hash] + post_ids
+            )
+            for row in cursor.fetchall():
+                pid = row[0]
+                res[pid]["user_liked"] = True
+                
+            return res
+        finally:
+            conn.close()
 
 
 def metrics_day():
@@ -1112,6 +1210,25 @@ class Handler(BaseHTTPRequestHandler):
         self.send_header("Cache-Control", "no-store")
         self.end_headers()
 
+    def send_json(self, status, data):
+        body = json.dumps(data, ensure_ascii=False).encode("utf-8")
+        self.send_response(status)
+        self.send_header("Content-Type", "application/json; charset=utf-8")
+        self.send_header("Access-Control-Allow-Origin", "*")
+        self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+        self.send_header("Access-Control-Allow-Headers", "Content-Type")
+        self.send_header("Cache-Control", "no-store")
+        self.send_header("Content-Length", str(len(body)))
+        self.end_headers()
+        self.wfile.write(body)
+
+    def do_OPTIONS(self):
+        self.send_response(204)
+        self.send_header("Access-Control-Allow-Origin", "*")
+        self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+        self.send_header("Access-Control-Allow-Headers", "Content-Type")
+        self.end_headers()
+
     def do_GET(self):
         if self.path == "/tg-feed/healthz":
             self.send_text(200, "ok\n")
@@ -1119,10 +1236,56 @@ class Handler(BaseHTTPRequestHandler):
         if self.path.split("?", 1)[0] == STATS_DASHBOARD_PATH:
             self.send_html(200, metrics_dashboard())
             return
+            
+        parsed_path = urlparse(self.path)
+        path_base = parsed_path.path
+        
+        if path_base == "/api/likes":
+            from urllib.parse import parse_qs
+            query = parse_qs(parsed_path.query)
+            post_ids = query.get("post_id", [])
+            if not post_ids:
+                self.send_json(400, {"error": "Missing post_id parameter"})
+                return
+            post_id = post_ids[0].strip()
+            ip_hash = get_ip_hash(self)
+            data = get_likes_info(post_id, ip_hash)
+            self.send_json(200, data)
+            return
+            
+        if path_base == "/api/likes/batch":
+            from urllib.parse import parse_qs
+            query = parse_qs(parsed_path.query)
+            ids_param = query.get("ids", [])
+            if not ids_param:
+                self.send_json(200, {})
+                return
+            post_ids = [pid.strip() for pid in ids_param[0].split(",") if pid.strip()]
+            ip_hash = get_ip_hash(self)
+            data = get_batch_likes(post_ids, ip_hash)
+            self.send_json(200, data)
+            return
+
         self.send_text(404, "not found\n")
 
     def do_POST(self):
-        if self.path.split("?", 1)[0] == METRICS_PATH:
+        parsed_path = urlparse(self.path)
+        path_base = parsed_path.path
+        
+        if path_base == "/api/likes":
+            from urllib.parse import parse_qs
+            query = parse_qs(parsed_path.query)
+            post_ids = query.get("post_id", [])
+            if not post_ids:
+                self.send_json(400, {"error": "Missing post_id parameter"})
+                return
+            post_id = post_ids[0].strip()
+            ip_hash = get_ip_hash(self)
+            data = toggle_like(post_id, ip_hash)
+            self.send_json(200, data)
+            return
+
+        if path_base == METRICS_PATH:
             length = min(int(self.headers.get("Content-Length", "0") or "0"), 1024)
             raw = self.rfile.read(length)
             try:
@@ -1132,9 +1295,11 @@ class Handler(BaseHTTPRequestHandler):
                 log(f"Ошибка metrics: {exc}")
             self.send_no_content()
             return
-        if self.path.split("?", 1)[0] != WEBHOOK_PATH:
+            
+        if path_base != WEBHOOK_PATH:
             self.send_text(404, "not found\n")
             return
+            
         expected = os.environ.get("TELEGRAM_WEBHOOK_SECRET", "")
         received = self.headers.get("X-Telegram-Bot-Api-Secret-Token", "")
         if not expected or received != expected:
@@ -1158,6 +1323,7 @@ class Handler(BaseHTTPRequestHandler):
 
 def serve():
     DATA_DIR.mkdir(parents=True, exist_ok=True)
+    init_likes_db()
     render_site(load_feed())
     httpd = ThreadingHTTPServer(("127.0.0.1", PORT), Handler)
     log(f"Слушаю 127.0.0.1:{PORT}{WEBHOOK_PATH}")

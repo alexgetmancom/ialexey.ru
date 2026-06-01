@@ -534,6 +534,10 @@ const sidebarItems = sortedItems;
                                           {formatViewsCount(item.views)}
                                       </span>
                                   )}
+                                  <span class="featured-item-likes post-likes-badge" data-post-id={item.message_id || item.id?.split(':').pop()} title="Лайки" style="display: none;">
+                                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="likes-icon"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg>
+                                      <span class="likes-count-val">0</span>
+                                  </span>
                               </a>
                           );
                       })}
@@ -648,6 +652,15 @@ const sidebarItems = sortedItems;
                                               </span>
                                           </>
                                       )}
+                                      {!isHabr && (
+                                          <>
+                                              <span class="article-row__meta-divider">•</span>
+                                              <span class="article-row__likes post-likes-badge" data-post-id={item.message_id || item.id?.split(':').pop()} title="Лайки" style="display: none;">
+                                                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="likes-icon"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg>
+                                                  <span class="likes-count-val">0</span>
+                                              </span>
+                                          </>
+                                      )}
                                   </div>
                               </div>
                           </a>
@@ -688,6 +701,10 @@ const sidebarItems = sortedItems;
                           >
                               <span class="sidebar-item-time">{timeStr}</span>
                               <span class="sidebar-item-text">{title}</span>
+                              <span class="sidebar-item-likes post-likes-badge" data-post-id={item.message_id || item.id?.split(':').pop()} title="Лайки" style="display: none;">
+                                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="likes-icon"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg>
+                                  <span class="likes-count-val">0</span>
+                              </span>
                           </a>
                       );
                   })}
@@ -879,6 +896,76 @@ const sidebarItems = sortedItems;
       width: 12px;
       height: 12px;
       opacity: 0.7;
+  }
+
+  .likes-icon {
+      width: 11px;
+      height: 11px;
+      opacity: 0.8;
+  }
+
+  .featured-item-views + .featured-item-likes {
+      margin-left: 0;
+  }
+
+  .featured-item-likes {
+      font-family: var(--font-mono);
+      font-size: 0.72rem;
+      color: var(--text-muted);
+      display: inline-flex;
+      align-items: center;
+      gap: 0.25rem;
+      flex-shrink: 0;
+      padding-left: 0.5rem;
+      margin-left: auto;
+      transition: color 0.2s;
+  }
+
+  .featured-item-likes.liked {
+      color: var(--accent);
+  }
+  .featured-item-likes.liked .likes-icon {
+      fill: var(--accent);
+      stroke: var(--accent);
+  }
+
+  .article-row__likes {
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      display: inline-flex;
+      align-items: center;
+      gap: 0.25rem;
+      transition: color 0.2s;
+  }
+
+  .article-row__likes.liked {
+      color: var(--accent);
+  }
+  .article-row__likes.liked .likes-icon {
+      fill: var(--accent);
+      stroke: var(--accent);
+  }
+
+  .sidebar-item-likes {
+      font-family: var(--font-mono);
+      font-size: 0.72rem;
+      color: var(--text-muted);
+      display: inline-flex;
+      align-items: center;
+      gap: 0.2rem;
+      flex-shrink: 0;
+      align-self: center;
+      margin-left: auto;
+      transition: color 0.2s;
+  }
+
+  .sidebar-item-likes.liked {
+      color: var(--accent);
+  }
+  .sidebar-item-likes.liked .likes-icon {
+      fill: var(--accent);
+      stroke: var(--accent);
   }
 
   /* 2. PREMIUM STREAM BANNER WITH YOUTUBE FALLBACK */
@@ -1743,6 +1830,38 @@ const sidebarItems = sortedItems;
       if (faqHeaderRow) {
           faqHeaderRow.style.cursor = 'pointer';
           faqHeaderRow.addEventListener('click', toggleFAQ);
+      }
+  }
+
+  // Bulk Likes Loader for the main page
+  const likesBadges = document.querySelectorAll('.post-likes-badge');
+  if (likesBadges.length > 0) {
+      const ids = Array.from(likesBadges)
+          .map(badge => badge.getAttribute('data-post-id'))
+          .filter(Boolean);
+          
+      if (ids.length > 0) {
+          fetch(`/api/likes/batch?ids=${ids.join(',')}`)
+              .then(res => res.json())
+              .then(data => {
+                  if (data) {
+                      likesBadges.forEach(badge => {
+                          const postId = badge.getAttribute('data-post-id');
+                          const info = data[postId];
+                          if (info) {
+                              const valEl = badge.querySelector('.likes-count-val');
+                              if (valEl) {
+                                  valEl.textContent = String(info.likes);
+                              }
+                              (badge as HTMLElement).style.display = 'inline-flex';
+                              if (info.user_liked) {
+                                  badge.classList.add('liked');
+                              }
+                          }
+                      });
+                  }
+              })
+              .catch(err => console.error('Error fetching batch likes:', err));
       }
   }
 </script>
