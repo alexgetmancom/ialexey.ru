@@ -51,6 +51,12 @@ export async function getStaticPaths() {
 
   return sortedItems.map((item: any) => {
     const id = item.message_id || item.id.split(':').pop();
+    const currentIndex = sortedItems.findIndex((x: any) => {
+      const xId = x.message_id || x.id.split(':').pop();
+      return String(xId) === String(id);
+    });
+    const newerItem = currentIndex > 0 ? sortedItems[currentIndex - 1] : null;
+    const olderItem = currentIndex >= 0 && currentIndex < sortedItems.length - 1 ? sortedItems[currentIndex + 1] : null;
     
     // Select latest 3 posts excluding the current one for related grid
     const latestPosts = sortedItems
@@ -68,7 +74,20 @@ export async function getStaticPaths() {
 
     return {
       params: { id: String(id) },
-      props: { item, latestPosts },
+      props: {
+        item,
+        latestPosts,
+        newerPost: newerItem ? {
+          id: newerItem.message_id || newerItem.id.split(':').pop(),
+          title: getFirstSentence(newerItem.text || ""),
+          date: newerItem.date
+        } : null,
+        olderPost: olderItem ? {
+          id: olderItem.message_id || olderItem.id.split(':').pop(),
+          title: getFirstSentence(olderItem.text || ""),
+          date: olderItem.date
+        } : null
+      },
     };
   });
 }
@@ -81,10 +100,20 @@ interface Props {
     date: string;
     image: string | null;
   }>;
+  newerPost: {
+    id: string | number;
+    title: string;
+    date: string;
+  } | null;
+  olderPost: {
+    id: string | number;
+    title: string;
+    date: string;
+  } | null;
 }
 
 const { id } = Astro.params;
-const { item, latestPosts } = Astro.props as Props;
+const { item, latestPosts, newerPost, olderPost } = Astro.props as Props;
 
 const channelUsername = "iAlexeyRu";
 const siteAuthor = "Алексей Гетманец";
@@ -226,6 +255,11 @@ const schema = JSON.stringify(schemaObject);
           
           <div class="article-body" set:html={sanitizeHtml(postBodyHtml || item.html || item.text)}></div>
 
+          <a href={telegramUrl} target="_blank" rel="noopener noreferrer" class="original-link">
+              <span>Открыть оригинал в Telegram</span>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17 17 7"/><path d="M7 7h10v10"/></svg>
+          </a>
+
           <!-- Divider -->
           <div class="post-divider"></div>
 
@@ -259,6 +293,27 @@ const schema = JSON.stringify(schemaObject);
           </div>
       </article>
 
+      {(newerPost || olderPost) && (
+          <nav class="post-neighbors" aria-label="Соседние посты">
+              {newerPost ? (
+                  <a href={`/posts/${newerPost.id}/`} class="neighbor-card neighbor-card--newer">
+                      <span class="neighbor-label">Новее</span>
+                      <span class="neighbor-title">{truncateText(newerPost.title, 80)}</span>
+                  </a>
+              ) : (
+                  <span class="neighbor-card neighbor-card--empty">Самый свежий пост</span>
+              )}
+              {olderPost ? (
+                  <a href={`/posts/${olderPost.id}/`} class="neighbor-card neighbor-card--older">
+                      <span class="neighbor-label">Старее</span>
+                      <span class="neighbor-title">{truncateText(olderPost.title, 80)}</span>
+                  </a>
+              ) : (
+                  <span class="neighbor-card neighbor-card--empty">Более ранних постов нет</span>
+              )}
+          </nav>
+      )}
+
       <!-- Comments Section (Giscus) -->
       <div class="comments-section">
           <div id="giscus-container" class="giscus-container">
@@ -278,7 +333,7 @@ const schema = JSON.stringify(schemaObject);
                           <a href={postUrl} class="related-card">
                               <div class="related-card-img-wrap">
                                   {post.image ? (
-                                      <img src={`/${post.image}`} alt="Related post" class="related-card-img" loading="lazy" />
+                                      <img src={`/${post.image}`} alt={post.title} class="related-card-img" loading="lazy" />
                                   ) : (
                                       <div class="related-card-placeholder">
                                           <span>{smartBadge.label}</span>
@@ -308,6 +363,7 @@ const schema = JSON.stringify(schemaObject);
   .post-main {
       max-width: 800px;
       margin: 1rem auto 4rem;
+      min-width: 0;
   }
 
   /* Elegant modern back link */
@@ -341,6 +397,7 @@ const schema = JSON.stringify(schemaObject);
       box-shadow: 0 8px 30px rgba(0, 0, 0, 0.08);
       backdrop-filter: blur(8px);
       -webkit-backdrop-filter: blur(8px);
+      min-width: 0;
   }
 
   .meta-row {
@@ -359,11 +416,14 @@ const schema = JSON.stringify(schemaObject);
       font-family: var(--font-mono);
       font-size: 0.8rem;
       color: var(--text-muted);
+      flex-wrap: wrap;
+      min-width: 0;
   }
 
   .tg-source {
       color: var(--text-muted);
       border-bottom: 1px dashed var(--border-dashed);
+      overflow-wrap: anywhere;
   }
 
   .tg-source:hover {
@@ -381,6 +441,7 @@ const schema = JSON.stringify(schemaObject);
       color: var(--text-header);
       margin: 0 0 1.5rem;
       letter-spacing: -0.5px;
+      overflow-wrap: anywhere;
   }
 
   .article-image-wrap {
@@ -400,20 +461,59 @@ const schema = JSON.stringify(schemaObject);
 
   .article-body {
       font-size: 1.1rem;
-      line-height: 1.7;
+      line-height: 1.78;
       color: var(--text-main);
+      max-width: 680px;
+      margin: 0 auto;
+      overflow-wrap: anywhere;
   }
 
   .article-body :global(a) {
       color: var(--accent);
       border-bottom: 1px solid var(--accent-glow);
+      overflow-wrap: anywhere;
   }
 
   .article-body :global(a:hover) {
       border-bottom-color: var(--accent);
   }
 
+  .article-body :global(p) {
+      margin: 0 0 1.15rem;
+  }
+
+  .original-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.45rem;
+      margin: 1.6rem auto 0;
+      padding: 0.62rem 0.9rem;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background-color: rgba(36, 161, 222, 0.06);
+      color: #62c7f3;
+      font-family: var(--font-heading);
+      font-size: 0.92rem;
+      font-weight: 700;
+      width: fit-content;
+  }
+
+  .original-link:hover {
+      border-color: #24A1DE;
+      color: #24A1DE;
+      background-color: rgba(36, 161, 222, 0.12);
+  }
+
+  .original-link svg {
+      width: 16px;
+      height: 16px;
+      flex-shrink: 0;
+  }
+
   @media (max-width: 768px) {
+      .post-main {
+          margin-top: 0.5rem;
+      }
       .post-article {
           padding: 1.25rem;
           border-radius: 12px;
@@ -432,6 +532,10 @@ const schema = JSON.stringify(schemaObject);
           width: 100%;
           justify-content: flex-start;
       }
+      .article-body {
+          font-size: 1rem;
+          line-height: 1.72;
+      }
   }
 
   /* Divider */
@@ -448,6 +552,7 @@ const schema = JSON.stringify(schemaObject);
       justify-content: space-between;
       flex-wrap: wrap;
       gap: 1rem;
+      min-width: 0;
   }
 
   .share-title {
@@ -461,6 +566,7 @@ const schema = JSON.stringify(schemaObject);
       display: flex;
       gap: 0.5rem;
       flex-wrap: wrap;
+      min-width: 0;
   }
 
   .share-btn {
@@ -477,6 +583,7 @@ const schema = JSON.stringify(schemaObject);
       background-color: rgba(255, 255, 255, 0.02);
       color: var(--text-main);
       transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+      min-width: 0;
   }
 
   .share-btn-icon {
@@ -511,6 +618,7 @@ const schema = JSON.stringify(schemaObject);
   /* Related Posts Section */
   .related-posts {
       margin-top: 3.5rem;
+      min-width: 0;
   }
 
   .related-title {
@@ -527,6 +635,7 @@ const schema = JSON.stringify(schemaObject);
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
       gap: 1.5rem;
+      min-width: 0;
   }
 
   .related-card {
@@ -537,6 +646,7 @@ const schema = JSON.stringify(schemaObject);
       display: flex;
       flex-direction: column;
       transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      min-width: 0;
   }
 
   .related-card:hover {
@@ -597,6 +707,59 @@ const schema = JSON.stringify(schemaObject);
       overflow: hidden;
       flex-grow: 1;
       transition: color 0.2s;
+      overflow-wrap: anywhere;
+  }
+
+  .post-neighbors {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 1rem;
+      margin-top: 1.25rem;
+  }
+
+  .neighbor-card {
+      min-width: 0;
+      padding: 1rem;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      background-color: var(--card-bg);
+      color: var(--text-main);
+      display: flex;
+      flex-direction: column;
+      gap: 0.35rem;
+      transition: border-color 0.2s ease, box-shadow 0.2s ease, color 0.2s ease;
+  }
+
+  .neighbor-card:hover {
+      border-color: var(--border-hover);
+      box-shadow: 0 8px 24px var(--accent-glow);
+      color: var(--text-header);
+  }
+
+  .neighbor-card--older {
+      text-align: right;
+  }
+
+  .neighbor-card--empty {
+      color: var(--text-muted);
+      justify-content: center;
+      font-size: 0.85rem;
+  }
+
+  .neighbor-label {
+      font-family: var(--font-mono);
+      font-size: 0.7rem;
+      color: var(--accent);
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+  }
+
+  .neighbor-title {
+      font-size: 0.9rem;
+      font-weight: 700;
+      line-height: 1.4;
+      overflow-wrap: anywhere;
   }
 
   .related-card:hover .related-card-title {
@@ -659,6 +822,19 @@ const schema = JSON.stringify(schemaObject);
   }
 
     @media (max-width: 600px) {
+        .article-image-wrap {
+            margin-bottom: 1.35rem;
+        }
+        .original-link {
+            width: 100%;
+            justify-content: center;
+        }
+        .post-neighbors {
+            grid-template-columns: 1fr;
+        }
+        .neighbor-card--older {
+            text-align: left;
+        }
         .share-bar {
             flex-direction: column;
             align-items: flex-start;

@@ -80,6 +80,23 @@ async function generateAvatar() {
     .toFile(outputPath);
 }
 
+async function generateSocialImage() {
+  const inputPath = path.join(publicDir, 'avatar.png');
+  if (!(await exists(inputPath))) {
+    return;
+  }
+
+  const outputPath = path.join(publicDir, 'social-image.jpg');
+  if (!(await needsUpdate(inputPath, outputPath))) {
+    return;
+  }
+
+  await sharp(inputPath)
+    .resize({ width: 500, height: 500, fit: 'cover' })
+    .jpeg({ quality: 82, mozjpeg: true })
+    .toFile(outputPath);
+}
+
 async function getLatestCompletedYoutubeId() {
   try {
     const response = await fetch(youtubeChannelFeed);
@@ -139,4 +156,5 @@ async function generateStreamCover() {
 
 await generateHabrImages();
 await generateAvatar();
+await generateSocialImage();
 await generateStreamCover();

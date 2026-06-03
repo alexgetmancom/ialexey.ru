@@ -18,6 +18,7 @@ const {
 const cleanDescription = removeLeadingEmoji(description);
 const siteAuthor = "Алексей Гетманец";
 const publicBaseUrl = "https://ialexey.ru";
+const socialImage = `${publicBaseUrl}/social-image.jpg`;
 ---
 <!DOCTYPE html>
 <html lang="ru">
@@ -40,7 +41,7 @@ const publicBaseUrl = "https://ialexey.ru";
     <meta property="og:title" content={title}>
     <meta property="og:description" content={cleanDescription}>
     <meta property="og:url" content={canonicalUrl}>
-    <meta property="og:image" content={`${publicBaseUrl}/avatar.png`}>
+    <meta property="og:image" content={socialImage}>
     <meta property="og:image:width" content="500">
     <meta property="og:image:height" content="500">
 
@@ -48,7 +49,7 @@ const publicBaseUrl = "https://ialexey.ru";
     <meta name="twitter:card" content="summary">
     <meta name="twitter:title" content={title}>
     <meta name="twitter:description" content={cleanDescription}>
-    <meta name="twitter:image" content={`${publicBaseUrl}/avatar.png`}>
+    <meta name="twitter:image" content={socialImage}>
 
     {schema && <script type="application/ld+json" set:html={schema}></script>}
 
@@ -97,19 +98,23 @@ const publicBaseUrl = "https://ialexey.ru";
         }
 
         html[data-theme="light"] {
-            --bg-color: #f6f8fa; /* Clean light grey background */
+            --bg-color: #f3f5f8; /* Clean light grey background */
             --card-bg: #ffffff; /* Pure white card background */
-            --text-main: #374151; /* High contrast dark grey text */
-            --text-secondary: #4B5563; /* Medium contrast secondary grey text */
-            --text-muted: #6B7280; /* Muted grey for metadata/dates */
+            --text-main: #263241; /* High contrast dark grey text */
+            --text-secondary: #4a5565; /* Medium contrast secondary grey text */
+            --text-muted: #647084; /* Muted grey for metadata/dates */
             --text-header: #111827; /* Rich black header text */
             --accent: #F04465; /* Keeps calmer signature crimson */
             --accent-glow: rgba(240, 68, 101, 0.08);
-            --border: rgba(0, 0, 0, 0.06);
+            --border: rgba(17, 24, 39, 0.1);
             --border-hover: rgba(240, 68, 101, 0.35);
-            --border-soft: rgba(0, 0, 0, 0.05);
-            --border-dashed: rgba(0, 0, 0, 0.12);
-            --meta-dot: rgba(0, 0, 0, 0.15);
+            --border-soft: rgba(17, 24, 39, 0.08);
+            --border-dashed: rgba(17, 24, 39, 0.18);
+            --meta-dot: rgba(17, 24, 39, 0.22);
+        }
+
+        *, *::before, *::after {
+            box-sizing: border-box;
         }
 
         body, header, footer, aside, section, a, button, input, .btn-social, .post-card, .article-row, .sidebar-item, .today-featured-card, .stream-banner {
@@ -127,6 +132,7 @@ const publicBaseUrl = "https://ialexey.ru";
             padding: 0;
             line-height: 1.6;
             -webkit-font-smoothing: antialiased;
+            overflow-wrap: break-word;
         }
 
         h1, h2, h3, .mono-text {
@@ -149,6 +155,7 @@ const publicBaseUrl = "https://ialexey.ru";
             max-width: 1200px; /* Wider container for premium grid */
             margin: 0 auto;
             padding: 0 1.5rem;
+            min-width: 0;
         }
 
         /* HEADER */
@@ -173,6 +180,7 @@ const publicBaseUrl = "https://ialexey.ru";
             display: grid;
             grid-template-columns: 1fr auto 1fr;
             align-items: center;
+            gap: 0.75rem;
             padding-top: 0.6rem;
             padding-bottom: 0.6rem;
         }
@@ -188,6 +196,7 @@ const publicBaseUrl = "https://ialexey.ru";
             gap: 0.75rem;
             text-decoration: none;
             justify-self: center;
+            min-width: 0;
         }
 
         .logo-avatar {
@@ -213,6 +222,7 @@ const publicBaseUrl = "https://ialexey.ru";
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             transition: all 0.3s ease;
+            white-space: nowrap;
         }
 
         .live-dot {
@@ -234,6 +244,7 @@ const publicBaseUrl = "https://ialexey.ru";
             align-items: center;
             gap: 0.6rem;
             justify-self: end;
+            min-width: 0;
         }
 
         /* HEADER SEARCH INPUT */
@@ -241,6 +252,7 @@ const publicBaseUrl = "https://ialexey.ru";
             position: relative;
             display: inline-flex;
             align-items: center;
+            min-width: 0;
         }
 
         .header-search-icon {
@@ -255,7 +267,7 @@ const publicBaseUrl = "https://ialexey.ru";
         #header-search-input {
             box-sizing: border-box;
             width: 140px;
-            padding: 6px 8px 6px 28px;
+            padding: 6px 32px 6px 28px;
             border-radius: 20px;
             border: 1px solid var(--border);
             background-color: rgba(255, 255, 255, 0.02);
@@ -273,13 +285,104 @@ const publicBaseUrl = "https://ialexey.ru";
             box-shadow: 0 0 0 2px var(--accent-glow);
         }
 
-        @media (max-width: 480px) {
-            #header-search-input {
-                width: 100px;
-            }
-            #header-search-input:focus {
-                width: 130px;
-            }
+        .header-search-clear {
+            position: absolute;
+            right: 6px;
+            width: 22px;
+            height: 22px;
+            border: 0;
+            border-radius: 50%;
+            background: transparent;
+            color: var(--text-muted);
+            cursor: pointer;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 0;
+        }
+
+        .header-search-clear.is-visible {
+            display: inline-flex;
+        }
+
+        .header-search-clear:hover {
+            background-color: var(--accent-glow);
+            color: var(--accent);
+        }
+
+        .header-search-clear svg {
+            width: 13px;
+            height: 13px;
+        }
+
+        .search-results-panel {
+            position: absolute;
+            top: calc(100% + 8px);
+            right: 0;
+            width: min(420px, calc(100vw - 2rem));
+            max-height: min(70vh, 520px);
+            overflow-y: auto;
+            background-color: rgba(17, 22, 32, 0.98);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            box-shadow: 0 18px 45px rgba(0, 0, 0, 0.35);
+            padding: 0.45rem;
+            z-index: 1002;
+            display: none;
+        }
+
+        html[data-theme="light"] .search-results-panel {
+            background-color: rgba(255, 255, 255, 0.98);
+            box-shadow: 0 18px 45px rgba(17, 24, 39, 0.14);
+        }
+
+        .search-results-panel.is-open {
+            display: block;
+        }
+
+        .search-result-item {
+            display: grid;
+            gap: 0.25rem;
+            padding: 0.65rem 0.7rem;
+            border-radius: 8px;
+            color: var(--text-main);
+            border: 1px solid transparent;
+        }
+
+        .search-result-item:hover,
+        .search-result-item.is-active {
+            background-color: var(--accent-glow);
+            border-color: var(--border-hover);
+            color: var(--text-header);
+        }
+
+        .search-result-title {
+            font-size: 0.88rem;
+            font-weight: 700;
+            line-height: 1.35;
+            overflow-wrap: anywhere;
+        }
+
+        .search-result-meta {
+            display: flex;
+            align-items: center;
+            gap: 0.45rem;
+            flex-wrap: wrap;
+            font-family: var(--font-mono);
+            font-size: 0.68rem;
+            color: var(--text-muted);
+        }
+
+        .search-result-excerpt {
+            font-size: 0.78rem;
+            line-height: 1.45;
+            color: var(--text-secondary);
+        }
+
+        .search-result-empty {
+            padding: 0.85rem 0.75rem;
+            font-size: 0.82rem;
+            color: var(--text-secondary);
         }
 
         /* BTN SOCIAL */
@@ -596,18 +699,21 @@ const publicBaseUrl = "https://ialexey.ru";
             position: fixed;
             top: 0;
             left: 0;
-            width: 100vw;
+            right: 0;
+            width: auto;
             height: 100vh;
             background: rgba(0, 0, 0, 0.4);
             backdrop-filter: blur(4px);
             z-index: 1000;
             opacity: 0;
+            display: none;
             pointer-events: none;
             visibility: hidden;
             transition: opacity 0.3s ease, visibility 0.3s ease;
         }
         
         .nav-overlay.active {
+            display: block;
             opacity: 1;
             pointer-events: auto;
             visibility: visible;
@@ -629,7 +735,7 @@ const publicBaseUrl = "https://ialexey.ru";
             transform: translateX(-100%);
             visibility: hidden;
             transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), visibility 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            display: flex;
+            display: none;
             flex-direction: column;
             padding: 0;
             box-shadow: 15px 0 50px rgba(0, 0, 0, 0.35);
@@ -637,6 +743,7 @@ const publicBaseUrl = "https://ialexey.ru";
         }
 
         .nav-drawer.active {
+            display: flex;
             transform: translateX(0);
             visibility: visible;
         }
@@ -750,19 +857,8 @@ const publicBaseUrl = "https://ialexey.ru";
                 margin-bottom: 1.25rem;
             }
             .header-container {
-                gap: 0.5rem;
                 padding-top: 0.6rem;
                 padding-bottom: 0.6rem;
-            }
-            .social-row {
-                width: auto;
-                justify-content: flex-end;
-            }
-            /* Hide secondary social items in the header on mobile to prevent overflow */
-            .social-row .youtube,
-            .social-row .discord,
-            .social-row .more {
-                display: none !important;
             }
             .media-grid {
                 gap: 1.5rem;
@@ -770,10 +866,74 @@ const publicBaseUrl = "https://ialexey.ru";
             }
         }
 
-        @media (max-width: 480px) {
-            /* Hide header text on extremely small screens, centering the avatar */
-            .media-header .logo-text {
-                display: none;
+        @media (max-width: 900px) {
+            .btn-social::after {
+                display: none !important;
+            }
+        }
+
+        @media (max-width: 640px) {
+            .media-header {
+                margin-bottom: 1rem;
+            }
+            .header-container {
+                grid-template-columns: auto minmax(0, 1fr) auto auto;
+                gap: 0.55rem;
+            }
+            .burger-toggle {
+                grid-column: 1;
+                grid-row: 1;
+            }
+            .logo-wrap {
+                grid-column: 2;
+                grid-row: 1;
+                justify-self: start;
+                gap: 0.55rem;
+            }
+            .logo-avatar {
+                width: 34px;
+                height: 34px;
+            }
+            .logo-text {
+                font-size: 1.05rem;
+                max-width: 38vw;
+                overflow: hidden;
+                text-overflow: ellipsis;
+            }
+            .social-row {
+                display: contents;
+            }
+            .header-search-wrap {
+                grid-column: 1 / -1;
+                grid-row: 2;
+                width: 100%;
+            }
+            #header-search-input,
+            #header-search-input:focus {
+                width: 100%;
+            }
+            .search-results-panel {
+                left: 0;
+                right: auto;
+                width: 100%;
+            }
+            .btn-social.lang-toggle {
+                grid-column: 3;
+                grid-row: 1;
+            }
+            .btn-social.theme-toggle {
+                grid-column: 4;
+                grid-row: 1;
+            }
+        }
+
+        @media (max-width: 380px) {
+            .container {
+                padding-left: 1rem;
+                padding-right: 1rem;
+            }
+            .logo-text {
+                max-width: 32vw;
             }
         }
         /* PREMIUM FOOTER & SOCIALS */
@@ -821,6 +981,16 @@ const publicBaseUrl = "https://ialexey.ru";
             background-color: var(--accent-glow);
             transform: translateY(-2px);
             box-shadow: 0 4px 12px var(--accent-glow);
+        }
+
+        .footer-rss-link {
+            width: auto;
+            border-radius: 999px;
+            gap: 0.45rem;
+            padding: 0 0.85rem;
+            font-family: var(--font-mono);
+            font-size: 0.72rem;
+            font-weight: 700;
         }
 
         .footer-copy {
@@ -990,6 +1160,12 @@ const publicBaseUrl = "https://ialexey.ru";
                         Контакты
                     </a>
                 </li>
+                <li>
+                    <a href="/feed.xml" class="nav-drawer__link">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 11a9 9 0 0 1 9 9"/><path d="M4 4a16 16 0 0 1 16 16"/><circle cx="5" cy="19" r="1"/></svg>
+                        RSS
+                    </a>
+                </li>
             </ul>
         </nav>
     </aside>
@@ -1017,6 +1193,10 @@ const publicBaseUrl = "https://ialexey.ru";
                         <circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>
                     </svg>
                     <input type="text" id="header-search-input" placeholder="Поиск..." aria-label="Поиск по сайту" />
+                    <button class="header-search-clear" id="header-search-clear" type="button" aria-label="Очистить поиск">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+                    </button>
+                    <div class="search-results-panel" id="search-results-panel" role="listbox" aria-label="Результаты поиска"></div>
                 </div>
                 <button class="btn-social lang-toggle notranslate" id="lang-toggle-btn" aria-label="Смена языка" data-tooltip="Смена языка / Change Language">
                     <span class="lang-ru-text">RU</span>
@@ -1062,6 +1242,10 @@ const publicBaseUrl = "https://ialexey.ru";
                 </a>
                 <a href="mailto:i@ialexey.ru" class="footer-social-link" title="Email">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="tg-icon-stroke"><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
+                </a>
+                <a href="/feed.xml" class="footer-social-link footer-rss-link" title="RSS">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="tg-icon-stroke"><path d="M4 11a9 9 0 0 1 9 9"/><path d="M4 4a16 16 0 0 1 16 16"/><circle cx="5" cy="19" r="1"/></svg>
+                    <span>RSS</span>
                 </a>
             </div>
             <div class="footer-copy">
@@ -1144,17 +1328,189 @@ const publicBaseUrl = "https://ialexey.ru";
 
 
 
-        // Header Search Keydown Logic
+        // Header search: full local index with a small results panel.
         const headerSearchInput = document.getElementById('header-search-input');
+        const headerSearchClear = document.getElementById('header-search-clear');
+        const searchResultsPanel = document.getElementById('search-results-panel');
+        let searchIndexPromise = null;
+        let activeSearchResults = [];
+        let activeSearchIndex = 0;
+
+        const escapeHtml = (value) => String(value || '')
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;');
+
+        const normalizeSearchText = (value) => String(value || '').toLowerCase().replace(/\s+/g, ' ').trim();
+
+        function loadSearchIndex() {
+            if (!searchIndexPromise) {
+                searchIndexPromise = fetch('/search-index.json')
+                    .then((res) => {
+                        if (!res.ok) {
+                            throw new Error('Search index unavailable');
+                        }
+                        return res.json();
+                    })
+                    .then((data) => Array.isArray(data.items) ? data.items : [])
+                    .catch(() => []);
+            }
+            return searchIndexPromise;
+        }
+
+        function scoreSearchItem(item, query) {
+            const title = normalizeSearchText(item.title);
+            const source = normalizeSearchText(item.source);
+            const category = normalizeSearchText(item.category);
+            const excerpt = normalizeSearchText(item.excerpt);
+            const haystack = `${title} ${source} ${category} ${excerpt}`;
+            if (!haystack.includes(query)) return 0;
+            let score = 1;
+            if (title === query) score += 8;
+            if (title.startsWith(query)) score += 5;
+            if (title.includes(query)) score += 3;
+            if (category.includes(query) || source.includes(query)) score += 2;
+            return score;
+        }
+
+        function renderSearchResults(results, query) {
+            if (!searchResultsPanel) return;
+            activeSearchResults = results;
+            activeSearchIndex = 0;
+
+            if (!query || query.length < 2) {
+                searchResultsPanel.classList.remove('is-open');
+                searchResultsPanel.innerHTML = '';
+                return;
+            }
+
+            searchResultsPanel.classList.add('is-open');
+            if (results.length === 0) {
+                searchResultsPanel.innerHTML = '<div class="search-result-empty">Ничего не найдено</div>';
+                return;
+            }
+
+            searchResultsPanel.innerHTML = results.map((item, index) => {
+                const date = item.date ? new Date(item.date).toLocaleDateString('ru-RU', {
+                    day: 'numeric',
+                    month: 'short',
+                    timeZone: 'Europe/Moscow'
+                }) : '';
+                return `
+                    <a class="search-result-item ${index === 0 ? 'is-active' : ''}" href="${escapeHtml(item.url)}" role="option" data-search-result-index="${index}">
+                        <span class="search-result-title">${escapeHtml(item.title)}</span>
+                        <span class="search-result-meta">
+                            <span>${escapeHtml(item.source)}</span>
+                            ${item.category ? `<span>•</span><span>${escapeHtml(item.category)}</span>` : ''}
+                            ${date ? `<span>•</span><span>${escapeHtml(date)}</span>` : ''}
+                        </span>
+                        ${item.excerpt ? `<span class="search-result-excerpt">${escapeHtml(item.excerpt)}</span>` : ''}
+                    </a>
+                `;
+            }).join('');
+        }
+
+        async function runHeaderSearch(value) {
+            const query = normalizeSearchText(value);
+            headerSearchClear?.classList.toggle('is-visible', query.length > 0);
+            window.dispatchEvent(new CustomEvent('site-search-query', { detail: { query } }));
+
+            if (query.length < 2) {
+                renderSearchResults([], query);
+                return;
+            }
+
+            const items = await loadSearchIndex();
+            const results = items
+                .map((item) => ({ item, score: scoreSearchItem(item, query) }))
+                .filter((entry) => entry.score > 0)
+                .sort((a, b) => b.score - a.score || new Date(b.item.date || 0).getTime() - new Date(a.item.date || 0).getTime())
+                .slice(0, 8)
+                .map((entry) => entry.item);
+            renderSearchResults(results, query);
+        }
+
+        function setActiveSearchResult(index) {
+            if (!searchResultsPanel || activeSearchResults.length === 0) return;
+            activeSearchIndex = Math.max(0, Math.min(index, activeSearchResults.length - 1));
+            searchResultsPanel.querySelectorAll('.search-result-item').forEach((item, itemIndex) => {
+                item.classList.toggle('is-active', itemIndex === activeSearchIndex);
+            });
+        }
+
         if (headerSearchInput) {
+            const params = new URLSearchParams(window.location.search);
+            const searchParam = params.get('search');
+            if (searchParam) {
+                headerSearchInput.value = searchParam;
+            }
+
+            headerSearchInput.addEventListener('input', (e) => {
+                runHeaderSearch(e.target.value);
+            });
+
             headerSearchInput.addEventListener('keydown', (e) => {
-                if (e.key === 'Enter') {
-                    const query = headerSearchInput.value.trim();
-                    if (window.location.pathname !== '/') {
-                        window.location.href = `/?search=${encodeURIComponent(query)}`;
+                if (e.key === 'ArrowDown') {
+                    e.preventDefault();
+                    setActiveSearchResult(activeSearchIndex + 1);
+                } else if (e.key === 'ArrowUp') {
+                    e.preventDefault();
+                    setActiveSearchResult(activeSearchIndex - 1);
+                } else if (e.key === 'Enter') {
+                    if (activeSearchResults[activeSearchIndex]) {
+                        e.preventDefault();
+                        window.location.href = activeSearchResults[activeSearchIndex].url;
                     }
+                } else if (e.key === 'Escape') {
+                    searchResultsPanel?.classList.remove('is-open');
+                    headerSearchInput.blur();
                 }
             });
+
+            if (searchParam) {
+                runHeaderSearch(searchParam);
+                if (window.location.pathname === '/') {
+                    const newUrl = window.location.protocol + '//' + window.location.host + window.location.pathname;
+                    window.history.replaceState({ path: newUrl }, '', newUrl);
+                }
+            }
+        }
+
+        if (headerSearchClear && headerSearchInput) {
+            headerSearchClear.addEventListener('click', () => {
+                headerSearchInput.value = '';
+                runHeaderSearch('');
+                headerSearchInput.focus();
+            });
+        }
+
+        searchResultsPanel?.addEventListener('mousemove', (e) => {
+            const item = e.target.closest?.('.search-result-item');
+            if (!item) return;
+            const index = Number(item.getAttribute('data-search-result-index'));
+            if (Number.isFinite(index)) {
+                setActiveSearchResult(index);
+            }
+        });
+
+        document.addEventListener('click', (e) => {
+            const target = e.target;
+            if (
+                target instanceof Node &&
+                headerSearchInput &&
+                searchResultsPanel &&
+                !headerSearchInput.contains(target) &&
+                !searchResultsPanel.contains(target) &&
+                !headerSearchClear?.contains(target)
+            ) {
+                searchResultsPanel.classList.remove('is-open');
+            }
+        });
+
+        if (headerSearchInput && headerSearchClear) {
+            headerSearchClear.classList.toggle('is-visible', headerSearchInput.value.trim().length > 0);
         }
 
         // Theme Toggle Logic

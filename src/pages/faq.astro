@@ -21,6 +21,7 @@ import FaqSection from '../components/FaqSection.astro';
         max-width: 800px;
         margin: 0 auto;
         padding: 1rem 0 3rem;
+        min-width: 0;
     }
 
     .page-title {
@@ -30,6 +31,7 @@ import FaqSection from '../components/FaqSection.astro';
         background: linear-gradient(to right, var(--text-header), var(--text-secondary));
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
+        overflow-wrap: anywhere;
     }
 
     .faq-subtitle {
@@ -38,6 +40,7 @@ import FaqSection from '../components/FaqSection.astro';
         font-size: 1.1rem;
         margin-bottom: 3.5rem;
         line-height: 1.5;
+        overflow-wrap: anywhere;
     }
 
     .faq-card {
@@ -45,6 +48,7 @@ import FaqSection from '../components/FaqSection.astro';
         border: 1px solid var(--border);
         border-radius: 16px;
         padding: 2.5rem;
+        min-width: 0;
     }
 
     /* Remove component margin inside the card wrapper */
@@ -53,6 +57,18 @@ import FaqSection from '../components/FaqSection.astro';
     }
 
     @media (max-width: 768px) {
+        .page-title,
+        .faq-subtitle {
+            text-align: left;
+        }
+        .page-title {
+            font-size: 1.85rem;
+            line-height: 1.15;
+        }
+        .faq-subtitle {
+            font-size: 1rem;
+            margin-bottom: 2rem;
+        }
         .faq-card {
             padding: 1.5rem;
         }

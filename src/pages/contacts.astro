@@ -95,6 +95,7 @@ import Layout from '../layouts/Layout.astro';
         max-width: 800px;
         margin: 0 auto;
         padding: 1rem 0 3rem;
+        min-width: 0;
     }
 
     .page-title {
@@ -104,6 +105,7 @@ import Layout from '../layouts/Layout.astro';
         background: linear-gradient(to right, var(--text-header), var(--text-secondary));
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
+        overflow-wrap: anywhere;
     }
 
     .contacts-subtitle {
@@ -112,12 +114,14 @@ import Layout from '../layouts/Layout.astro';
         font-size: 1.1rem;
         margin-bottom: 3.5rem;
         line-height: 1.5;
+        overflow-wrap: anywhere;
     }
 
     .contacts-grid {
         display: grid;
         grid-template-columns: repeat(2, 1fr);
         gap: 1.5rem;
+        min-width: 0;
     }
 
     @media (max-width: 768px) {
@@ -137,6 +141,7 @@ import Layout from '../layouts/Layout.astro';
         transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
         position: relative;
         overflow: hidden;
+        min-width: 0;
     }
 
     .card-icon-wrap {
@@ -167,6 +172,7 @@ import Layout from '../layouts/Layout.astro';
         display: flex;
         flex-direction: column;
         gap: 0.5rem;
+        min-width: 0;
     }
 
     .card-info h3 {
@@ -175,6 +181,7 @@ import Layout from '../layouts/Layout.astro';
         font-weight: 700;
         color: var(--text-header);
         transition: color 0.25s ease;
+        overflow-wrap: anywhere;
     }
 
     .card-info p {
@@ -182,6 +189,7 @@ import Layout from '../layouts/Layout.astro';
         font-size: 0.92rem;
         color: var(--text-secondary);
         line-height: 1.5;
+        overflow-wrap: anywhere;
     }
 
     .card-link-text {
@@ -192,6 +200,8 @@ import Layout from '../layouts/Layout.astro';
         display: inline-flex;
         align-items: center;
         transition: transform 0.2s ease;
+        overflow-wrap: anywhere;
+        word-break: break-word;
     }
 
     /* Colors and dynamic highlights for each service */
@@ -209,5 +219,34 @@ import Layout from '../layouts/Layout.astro';
 
     .contact-card:hover .card-link-text {
         transform: translateX(3px);
+    }
+
+    @media (max-width: 520px) {
+        .contacts-wrap {
+            padding-top: 0.5rem;
+        }
+        .page-title {
+            font-size: 1.85rem;
+            line-height: 1.15;
+            text-align: left;
+        }
+        .contacts-subtitle {
+            text-align: left;
+            font-size: 1rem;
+            margin-bottom: 2rem;
+        }
+        .contact-card {
+            padding: 1.25rem;
+            gap: 1rem;
+            border-radius: 12px;
+        }
+        .card-icon-wrap {
+            width: 42px;
+            height: 42px;
+            border-radius: 10px;
+        }
+        .card-info h3 {
+            font-size: 1.05rem;
+        }
     }
 </style>

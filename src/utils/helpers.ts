@@ -117,10 +117,10 @@ export function getSmartBadge(text: string): { label: string; class: string; emo
   if (t.includes("слив") || t.includes("утек") || t.includes("секрет") || t.includes("leak") || t.includes("эксклюзив")) {
     return { label: "Сливы", class: "badge--leaks", emoji: "⚡" };
   }
-  if (t.includes("gpt") || t.includes("gemini") || t.includes("claude") || t.includes("anthropic") || t.includes("openai") || t.includes("google") || t.includes("llama")) {
+  if (t.includes("gpt") || t.includes("gemini") || t.includes("claude") || t.includes("anthropic") || t.includes("openai") || t.includes("google") || t.includes("llama") || t.includes("codex")) {
     return { label: "ИИ-Модели", class: "badge--ai", emoji: "🤖" };
   }
-  if (t.includes("нейросеть") || t.includes("midjourney") || t.includes("sora") || t.includes("генераци") || t.includes("искусствен")) {
+  if (t.includes("нейросеть") || t.includes("midjourney") || t.includes("sora") || t.includes("генераци") || t.includes("искусствен") || t.includes("ии-") || t.includes("ai ")) {
     return { label: "Нейросети", class: "badge--neural", emoji: "🎨" };
   }
   return { label: "Новости", class: "badge--news", emoji: "📰" };
