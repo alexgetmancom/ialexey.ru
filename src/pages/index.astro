@@ -8,7 +8,6 @@ import habrFallback from '../data/habr.json';
 import ArticleRow from '../components/ArticleRow.astro';
 import SidebarItem from '../components/SidebarItem.astro';
 import StreamBanner from '../components/StreamBanner.astro';
-import FaqSection from '../components/FaqSection.astro';
 import {
   formatTimeOnly,
   truncateText,
@@ -525,8 +524,6 @@ const sidebarItems = sortedItems.map(item => {
           </aside>
       )}
   </div>
-
-  <FaqSection />
 
 </Layout>
 
