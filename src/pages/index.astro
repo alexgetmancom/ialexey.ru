@@ -5,7 +5,6 @@ import crypto from 'node:crypto';
 import sharp from 'sharp';
 import Layout from '../layouts/Layout.astro';
 import habrFallback from '../data/habr.json';
-import ArticleRow from '../components/ArticleRow.astro';
 import SidebarItem from '../components/SidebarItem.astro';
 import StreamBanner from '../components/StreamBanner.astro';
 import {
@@ -488,107 +487,45 @@ function cleanArticleTitle(title: string) {
               {articleItems.length === 0 ? (
                   <div class="telegram-feed__empty" style="padding: 3rem; text-align: center;">Постов пока нет. Новые посты появятся здесь автоматически!</div>
               ) : (
-                  <>
-                      {/* Grid for top 3 articles */}
-                      <div class="articles-grid">
-                          {/* Hero Card (Left) */}
-                          {articleItems.slice(0, 1).map((item) => {
-                              const cleanedTitle = cleanArticleTitle(item.title ? item.title : getFirstSentence(item.text || ""));
-                              const truncatedTitle = truncateText(cleanedTitle, 105);
-                              const descText = truncateText(item.desc || item.text || "", 150);
-                              const badge = item.categories && item.categories.length > 0
-                                  ? { label: item.categories[0], class: getSmartBadge(item.text || "").class }
-                                  : getSmartBadge(item.text || "");
-                              return (
-                                  <a href={item.url || getPostPath(item)} class="article-card-hero" target={item.url ? "_blank" : undefined} rel={item.url ? "noopener noreferrer" : undefined} data-search-text={(truncatedTitle + " " + descText).toLowerCase()}>
-                                      <div class="hero-img-container">
-                                          {item.image ? (
-                                              <img src={item.image.startsWith('http') ? item.image : `/${item.image}`} alt={truncatedTitle} loading="eager" decoding="async" />
-                                          ) : (
-                                              <div class="article-row__placeholder-img" style="height: 100%;">
-                                                  <span class="placeholder-emoji" style="font-size: 3.5rem;">{getSmartBadge(item.text || "").emoji}</span>
-                                              </div>
+                  <div class="articles-grid-uniform">
+                      {articleItems.slice(0, 4).map((item) => {
+                          const cleanedTitle = cleanArticleTitle(item.title ? item.title : getFirstSentence(item.text || ""));
+                          const truncatedTitle = truncateText(cleanedTitle, 105);
+                          const descText = truncateText(item.desc || item.text || "", 150);
+                          const badge = item.categories && item.categories.length > 0
+                              ? { label: item.categories[0], class: getSmartBadge(item.text || "").class }
+                              : getSmartBadge(item.text || "");
+                          return (
+                              <a href={item.url || getPostPath(item)} class="article-card-uniform" target={item.url ? "_blank" : undefined} rel={item.url ? "noopener noreferrer" : undefined} data-search-text={(truncatedTitle + " " + descText).toLowerCase()}>
+                                  <div class="uniform-img-container">
+                                      {item.image ? (
+                                          <img src={item.image.startsWith('http') ? item.image : `/${item.image}`} alt={truncatedTitle} loading="lazy" decoding="async" />
+                                      ) : (
+                                          <div class="article-row__placeholder-img" style="height: 100%;">
+                                              <span class="placeholder-emoji" style="font-size: 2.5rem;">{getSmartBadge(item.text || "").emoji}</span>
+                                          </div>
+                                      )}
+                                      <span class={`uniform-badge badge ${badge.class}`}>{badge.label}</span>
+                                  </div>
+                                  <div class="uniform-content">
+                                      <h3 class="uniform-title">{truncatedTitle}</h3>
+                                      <p class="uniform-desc">{descText}</p>
+                                      <div class="uniform-meta">
+                                          <span class="uniform-date">{formatDateRussian(item.date)}</span>
+                                          {item.views > 0 && (
+                                              <>
+                                                  <span class="meta-divider">•</span>
+                                                  <span class="uniform-views">
+                                                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="views-icon"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+                                                      {formatViewsCount(item.views)}
+                                                  </span>
+                                              </>
                                           )}
-                                          <span class={`hero-badge badge ${badge.class}`}>{badge.label}</span>
                                       </div>
-                                      <div class="hero-content">
-                                          <h3 class="hero-title">{truncatedTitle}</h3>
-                                          <p class="hero-desc">{descText}</p>
-                                          <div class="hero-meta">
-                                              <span class="hero-date">{formatDateRussian(item.date)}</span>
-                                              {item.views > 0 && (
-                                                  <>
-                                                      <span class="meta-divider">•</span>
-                                                      <span class="hero-views">
-                                                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="views-icon"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
-                                                          {formatViewsCount(item.views)}
-                                                      </span>
-                                                  </>
-                                              )}
-                                          </div>
-                                      </div>
-                                  </a>
-                              );
-                          })}
-
-                          {/* Side Stack (Right) */}
-                          <div class="articles-side-col">
-                              {articleItems.slice(1, 3).map((item) => {
-                                  const cleanedTitle = cleanArticleTitle(item.title ? item.title : getFirstSentence(item.text || ""));
-                                  const truncatedTitle = truncateText(cleanedTitle, 86);
-                                  const badge = item.categories && item.categories.length > 0
-                                      ? { label: item.categories[0], class: getSmartBadge(item.text || "").class }
-                                      : getSmartBadge(item.text || "");
-                                  return (
-                                      <a href={item.url || getPostPath(item)} class="article-card-side" target={item.url ? "_blank" : undefined} rel={item.url ? "noopener noreferrer" : undefined} data-search-text={(truncatedTitle + " " + (item.text || "")).toLowerCase()}>
-                                          <div class="side-img-container">
-                                              {item.image ? (
-                                                  <img src={item.image.startsWith('http') ? item.image : `/${item.image}`} alt={truncatedTitle} loading="lazy" decoding="async" />
-                                              ) : (
-                                                  <div class="article-row__placeholder-img" style="height: 100%;">
-                                                      <span class="placeholder-emoji" style="font-size: 2.2rem;">{getSmartBadge(item.text || "").emoji}</span>
-                                                  </div>
-                                              )}
-                                              <span class={`side-badge badge ${badge.class}`}>{badge.label}</span>
-                                          </div>
-                                          <div class="side-content">
-                                              <h3 class="side-title">{truncatedTitle}</h3>
-                                              <div class="side-meta">
-                                                  <span class="side-date">{formatDateRussian(item.date)}</span>
-                                                  {item.views > 0 && (
-                                                      <>
-                                                          <span class="meta-divider">•</span>
-                                                          <span class="side-views">
-                                                              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="views-icon"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
-                                                              {formatViewsCount(item.views)}
-                                                          </span>
-                                                      </>
-                                                  )}
-                                              </div>
-                                          </div>
-                                      </a>
-                                  );
-                              })}
-                          </div>
-                      </div>
-
-                      {/* Remaining articles list */}
-                      {articleItems.length > 3 && (
-                          <div class="articles-list">
-                              {articleItems.slice(3).map((item, index) => (
-                                  <ArticleRow item={item} index={index + 3} />
-                              ))}
-                          </div>
-                      )}
-                  </>
-              )}
-
-              {articleItems.length > 5 && (
-                  <div class="articles-show-more-wrap">
-                      <button id="show-more-btn" class="show-more-btn">
-                          <span>Смотреть все</span>
-                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="show-more-btn__icon"><path d="m6 9 6 6 6-6"/></svg>
-                      </button>
+                                  </div>
+                              </a>
+                          );
+                      })}
                   </div>
               )}
           </section>
@@ -822,11 +759,6 @@ function cleanArticleTitle(title: string) {
       transform: translateY(2px);
   }
 
-  .articles-list--expanded .article-row--hidden {
-      display: flex !important;
-      animation: fadeIn 0.4s ease forwards;
-  }
-
   .sidebar-list--expanded .sidebar-item--hidden {
       display: flex !important;
       animation: fadeIn 0.4s ease forwards;
@@ -837,256 +769,127 @@ function cleanArticleTitle(title: string) {
       to { opacity: 1; transform: translateY(0); }
   }
 
-  .articles-show-more-wrap {
-      display: flex;
-      justify-content: center;
-      margin-top: 2rem;
+  /* ARTICLES GRID SYSTEM (Uniform 2x2 Layout) */
+  .articles-grid-uniform {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 2.25rem;
+      margin-bottom: 1.5rem;
   }
 
-  .show-more-btn {
+  @media (max-width: 600px) {
+      .articles-grid-uniform {
+          grid-template-columns: 1fr;
+          gap: 1.75rem;
+      }
+  }
+
+  /* UNIFORM ARTICLE CARD */
+  .article-card-uniform {
+      display: flex;
+      flex-direction: column;
+      text-decoration: none;
+      color: inherit;
+      transition: all 0.3s ease;
+  }
+
+  .uniform-img-container {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 16 / 10;
+      border-radius: 10px;
+      overflow: hidden;
+      background-color: #000;
+      border: 1px solid var(--border);
+      margin-bottom: 1rem;
+  }
+
+  .uniform-img-container img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transition: transform 0.5s ease;
+  }
+
+  .article-card-uniform:hover .uniform-img-container img {
+      transform: scale(1.03);
+  }
+
+  .uniform-badge {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.4);
+      z-index: 10;
+  }
+
+  .uniform-content {
+      display: flex;
+      flex-direction: column;
+      padding: 0 0.25rem;
+  }
+
+  .uniform-title {
+      font-family: var(--font-heading);
+      font-size: 1.2rem;
+      font-weight: 700;
+      line-height: 1.35;
+      color: var(--text-header);
+      margin: 0 0 0.5rem;
+      transition: color 0.2s ease;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+  }
+
+  .article-card-uniform:hover .uniform-title {
+      color: var(--accent);
+  }
+
+  .uniform-desc {
+      font-size: 0.88rem;
+      line-height: 1.5;
+      color: var(--text-secondary);
+      margin: 0 0 0.75rem;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+  }
+
+  .uniform-meta {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+  }
+
+  .uniform-date {
+      font-family: var(--font-mono);
+      font-size: 0.72rem;
+      color: var(--text-muted);
+  }
+
+  .uniform-views {
+      font-family: var(--font-mono);
+      font-size: 0.72rem;
+      color: var(--text-muted);
       display: inline-flex;
       align-items: center;
-      gap: 0.5rem;
-      background-color: transparent;
-      border: 1px solid var(--border);
-      color: var(--text-header);
-      padding: 0.75rem 2rem;
-      border-radius: 8px;
-      font-family: var(--font-heading);
-      font-size: 0.85rem;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-      cursor: pointer;
-      transition: all 0.25s ease;
+      gap: 0.25rem;
   }
 
-  .show-more-btn:hover {
-      background-color: var(--accent-glow);
-      border-color: var(--accent);
-      color: var(--accent);
-      box-shadow: 0 4px 15px var(--accent-glow);
+  .meta-divider {
+      color: var(--text-muted);
+      font-size: 0.72rem;
+      opacity: 0.6;
   }
 
-  .show-more-btn__icon {
-      width: 16px;
-      height: 16px;
-      transition: transform 0.25s ease;
+  .views-icon {
+      width: 12px;
+      height: 12px;
+      opacity: 0.7;
   }
-
-  .show-more-btn:hover .show-more-btn__icon {
-      transform: translateY(2px);
-  }
-
-    /* ARTICLES GRID SYSTEM (Hero + Side Stack) */
-    .articles-grid {
-        display: grid;
-        grid-template-columns: 1.2fr 1fr;
-        gap: 2.25rem;
-        margin-bottom: 2.5rem;
-    }
-
-    @media (max-width: 900px) {
-        .articles-grid {
-            grid-template-columns: 1fr;
-            gap: 2rem;
-        }
-    }
-
-    /* HERO CARD */
-    .article-card-hero {
-        display: flex;
-        flex-direction: column;
-        text-decoration: none;
-        color: inherit;
-        transition: all 0.3s ease;
-    }
-
-    .hero-img-container {
-        position: relative;
-        width: 100%;
-        aspect-ratio: 16 / 10;
-        border-radius: 12px;
-        overflow: hidden;
-        background-color: #000;
-        border: 1px solid var(--border);
-        margin-bottom: 1.25rem;
-    }
-
-    .hero-img-container img {
-        width: 100%;
-        height: 100%;
-        object-fit: cover;
-        transition: transform 0.5s ease;
-    }
-
-    .article-card-hero:hover .hero-img-container img {
-        transform: scale(1.03);
-    }
-
-    .hero-badge {
-        position: absolute;
-        top: 12px;
-        left: 12px;
-        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.4);
-        z-index: 10;
-    }
-
-    .hero-content {
-        text-align: center;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        padding: 0 0.5rem;
-    }
-
-    .hero-title {
-        font-family: var(--font-heading);
-        font-size: 1.45rem;
-        font-weight: 800;
-        line-height: 1.3;
-        color: var(--text-header);
-        margin: 0 0 0.75rem;
-        transition: color 0.2s ease;
-    }
-
-    .article-card-hero:hover .hero-title {
-        color: var(--accent);
-    }
-
-    .hero-desc {
-        font-size: 0.92rem;
-        line-height: 1.6;
-        color: var(--text-secondary);
-        margin: 0 0 1rem;
-        max-width: 600px;
-        display: -webkit-box;
-        -webkit-line-clamp: 2;
-        -webkit-box-orient: vertical;
-        overflow: hidden;
-    }
-
-    .hero-meta {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 0.75rem;
-    }
-
-    .hero-date {
-        font-family: var(--font-mono);
-        font-size: 0.72rem;
-        color: var(--text-muted);
-    }
-
-    .hero-views {
-        font-family: var(--font-mono);
-        font-size: 0.72rem;
-        color: var(--text-muted);
-        display: inline-flex;
-        align-items: center;
-        gap: 0.25rem;
-    }
-
-    /* SIDE CARDS */
-    .articles-side-col {
-        display: flex;
-        flex-direction: column;
-        gap: 2rem;
-    }
-
-    .article-card-side {
-        display: flex;
-        flex-direction: column;
-        gap: 0.75rem;
-        text-decoration: none;
-        color: inherit;
-        transition: all 0.3s ease;
-    }
-
-    .side-img-container {
-        position: relative;
-        width: 100%;
-        aspect-ratio: 16 / 9;
-        border-radius: 8px;
-        overflow: hidden;
-        background-color: #000;
-        border: 1px solid var(--border);
-    }
-
-    .side-img-container img {
-        width: 100%;
-        height: 100%;
-        object-fit: cover;
-        transition: transform 0.5s ease;
-    }
-
-    .article-card-side:hover .side-img-container img {
-        transform: scale(1.03);
-    }
-
-    .side-badge {
-        position: absolute;
-        top: 8px;
-        left: 8px;
-        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.4);
-        z-index: 10;
-    }
-
-    .side-content {
-        padding: 0;
-    }
-
-    .side-title {
-        font-family: var(--font-heading);
-        font-size: 1.15rem;
-        font-weight: 700;
-        line-height: 1.35;
-        color: var(--text-header);
-        margin: 0 0 0.5rem;
-        transition: color 0.2s ease;
-        display: -webkit-box;
-        -webkit-line-clamp: 2;
-        -webkit-box-orient: vertical;
-        overflow: hidden;
-    }
-
-    .article-card-side:hover .side-title {
-        color: var(--accent);
-    }
-
-    .side-meta {
-        display: flex;
-        align-items: center;
-        gap: 0.75rem;
-    }
-
-    .side-date {
-        font-family: var(--font-mono);
-        font-size: 0.72rem;
-        color: var(--text-muted);
-    }
-
-    .side-views {
-        font-family: var(--font-mono);
-        font-size: 0.72rem;
-        color: var(--text-muted);
-        display: inline-flex;
-        align-items: center;
-        gap: 0.25rem;
-    }
-
-    .meta-divider {
-        color: var(--text-muted);
-        font-size: 0.72rem;
-        opacity: 0.6;
-    }
-
-    .views-icon {
-        width: 12px;
-        height: 12px;
-        opacity: 0.7;
-    }
 
     /* RESPONSIVE SYSTEM */
     @media (max-width: 900px) {
@@ -1100,7 +903,7 @@ function cleanArticleTitle(title: string) {
 <script>
   // Search Logic
   document.addEventListener('DOMContentLoaded', () => {
-      const filterableItems = document.querySelectorAll('.article-row, .sidebar-item, .featured-item-link, .article-card-hero, .article-card-side');
+      const filterableItems = document.querySelectorAll('.sidebar-item, .featured-item-link, .article-card-uniform');
       const gridContainer = document.querySelector('.page-layout-grid');
 
       let searchQuery = '';
@@ -1153,16 +956,6 @@ function cleanArticleTitle(title: string) {
           window.history.replaceState({ path: newUrl }, '', newUrl);
       }
   });
-
-  // Articles Expander
-  const showMoreBtn = document.getElementById('show-more-btn');
-  const articlesList = document.querySelector('.articles-list');
-  if (showMoreBtn && articlesList) {
-      showMoreBtn.addEventListener('click', () => {
-          articlesList.classList.add('articles-list--expanded');
-          showMoreBtn.style.display = 'none';
-      });
-  }
 
   // Sidebar News Expander
   const sidebarShowMoreBtn = document.getElementById('sidebar-show-more-btn');
