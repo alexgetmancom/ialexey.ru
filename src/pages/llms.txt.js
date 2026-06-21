@@ -7,42 +7,29 @@ export async function GET(context) {
   const localFeedJsonPath = path.resolve('src/data/feed.json');
 
   let parsedData = null;
-
-  if (fs.existsSync(prodFeedJsonPath)) {
-    try {
-      parsedData = JSON.parse(fs.readFileSync(prodFeedJsonPath, 'utf-8'));
-    } catch (e) {
-      console.error(e);
-    }
-  }
-
-  if (!parsedData && fs.existsSync(localFeedJsonPath)) {
-    try {
-      parsedData = JSON.parse(fs.readFileSync(localFeedJsonPath, 'utf-8'));
-    } catch (e) {
-      console.error(e);
+  for (const filePath of [prodFeedJsonPath, localFeedJsonPath]) {
+    if (!parsedData && fs.existsSync(filePath)) {
+      try {
+        parsedData = JSON.parse(fs.readFileSync(filePath, 'utf-8'));
+      } catch (e) {
+        console.error(e);
+      }
     }
   }
 
   let feedItems = [];
-  if (parsedData) {
-    if (Array.isArray(parsedData)) {
-      feedItems = parsedData;
-    } else if (parsedData.items && Array.isArray(parsedData.items)) {
-      feedItems = parsedData.items;
-    }
+  if (Array.isArray(parsedData)) {
+    feedItems = parsedData;
+  } else if (parsedData?.items && Array.isArray(parsedData.items)) {
+    feedItems = parsedData.items;
   }
 
-  // Sort by date descending
-  const sortedItems = feedItems.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  const sortedItems = feedItems
+    .filter(item => item.text_en)
+    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
-  const siteUrl = context.site ? context.site.toString().replace(/\/$/, '') : 'https://ialexey.ru';
-  const siteAuthor = "Алексей Гетманец";
-  const siteDescription = "Сливы и новости ИИ от Алексея Гетманца: короткая Telegram-лента, RSS и статические страницы постов.";
-  const telegramUrl = "https://t.me/iAlexeyRu";
-  const xProfileUrl = "https://x.com/iAlexeyRu";
+  const siteUrl = context.site ? context.site.toString().replace(/\/$/, '') : 'https://alexgetman.com';
 
-  // Formatting helpers matching python implementation
   function cleanText(text) {
     return (text || "").replace(/\n{3,}/g, "\n\n").trim();
   }
@@ -56,57 +43,62 @@ export async function GET(context) {
     }
     return text.slice(0, Math.max(0, limit - 1)).trimEnd() + "…";
   }
-
   function formatDate(value) {
     if (!value) return "";
     try {
-      const date = new Date(value);
-      const formatter = new Intl.DateTimeFormat("ru-RU", {
+      return new Intl.DateTimeFormat("en-GB", {
         timeZone: "Europe/Moscow",
         day: "2-digit",
-        month: "2-digit",
+        month: "short",
         year: "numeric",
         hour: "2-digit",
         minute: "2-digit",
         hour12: false,
-      });
-      return formatter.format(date).replace(",", "");
+      }).format(new Date(value));
     } catch (e) {
       return value;
     }
   }
 
   const lines = [
-    `# ${siteAuthor}`,
+    "# Alex Getman",
     "",
-    `> ${siteDescription}`,
+    "> English-first AI, automation and self-hosted systems hub. Russian originals are available under /ru/.",
     "",
-    "## Основное",
+    "## Core URLs",
     "",
-    `- Сайт: ${siteUrl}/`,
-    `- Telegram: ${telegramUrl}`,
-    `- X / Twitter: ${xProfileUrl}`,
-    `- RSS: ${siteUrl}/feed.xml`,
-    `- Sitemap: ${siteUrl}/sitemap-index.xml`,
+    `- Website: ${siteUrl}/`,
+    `- English JSON feed: ${siteUrl}/feed.json`,
+    `- English RSS: ${siteUrl}/feed.xml`,
+    `- Russian section: ${siteUrl}/ru/`,
+    `- Russian RSS: ${siteUrl}/ru/feed.xml`,
+    `- Sitemap index: ${siteUrl}/sitemap-index.xml`,
+    `- Markdown overview: ${siteUrl}/index.md`,
     "",
-    "## Последние посты",
+    "## Social profiles",
+    "",
+    "- Telegram: https://t.me/alexgetmancom",
+    "- Threads: https://www.threads.com/@alexgetmancom",
+    "- GitHub: https://github.com/alexgetmancom",
+    "- LinkedIn: https://www.linkedin.com/in/alexgetmancom",
+    "- YouTube: https://www.youtube.com/@alexgetmancom",
+    "",
+    "## Latest English posts",
     "",
   ];
 
   if (sortedItems.length === 0) {
-    lines.push("- Постов пока нет.");
+    lines.push("- No English posts yet.");
   } else {
-    for (const item of sortedItems) {
-      const id = item.message_id || item.id.split(':').pop();
-      const title = truncateText(item.text || "", 86) || `Пост Telegram ${id}`;
+    for (const item of sortedItems.slice(0, 30)) {
+      const id = item.message_id || item.id?.split(':').pop();
+      const title = truncateText(item.text_en || item.text || "", 86) || `Telegram post ${id}`;
       const date = formatDate(item.date);
-      lines.push(`- [${title}](${siteUrl}/posts/${id}/) — ${date} MSK`);
+      lines.push(`- [${title}](${siteUrl}/en/posts/${id}/) - ${date} MSK`);
     }
   }
 
-  const body = lines.join("\n").rstrip ? lines.join("\n").rstrip() + "\n" : lines.join("\n") + "\n";
-
-  return new Response(body, {
+  return new Response(lines.join("\n") + "\n", {
     headers: {
       'Content-Type': 'text/plain; charset=utf-8'
     }

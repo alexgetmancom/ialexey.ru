@@ -1,14 +1,14 @@
 ---
 import fs from 'node:fs';
 import path from 'node:path';
-import Layout from '../../layouts/Layout.astro';
+import Layout from '../../../layouts/Layout.astro';
 import {
   getFirstSentence,
   truncateText,
   getSmartBadge,
   formatDate,
   sanitizeHtml
-} from '../../utils/helpers';
+} from '../../../utils/helpers';
 
 // getStaticPaths is required in Astro static mode for dynamic routes
 export async function getStaticPaths() {
@@ -188,7 +188,7 @@ const { title: postTitle, titleHtml: postTitleHtml, bodyHtml: postBodyHtml } = s
 const pageMetaTitle = postTitle || `Пост Telegram ${id}`;
 const postDescription = truncateText(postBodyHtml.replace(/<[^>]+>/g, '') || item.text || "", 220) || "Сливы и новости ИИ от Алексея Гетманца: короткая Telegram-лента, RSS и статические страницы постов.";
 
-const localUrl = `https://alexgetman.com/ru/posts/`;
+const localUrl = `https://alexgetman.com/ru/posts/${id}/`;
 const telegramUrl = item.url || `https://t.me/${channelUsername}/${id}`;
 
 
@@ -225,7 +225,20 @@ const schemaObject = {
 
 const schema = JSON.stringify(schemaObject);
 ---
-<Layout title={`${pageMetaTitle} | ${siteAuthor}`} description={postDescription} schema={schema} canonicalUrl={localUrl}>
+<Layout
+  title={`${pageMetaTitle} | ${siteAuthor}`}
+  description={postDescription}
+  schema={schema}
+  canonicalUrl={localUrl}
+  lang="ru"
+  siteName="Алексей Гетманец"
+  rssHref="/ru/feed.xml"
+  alternateLinks={[
+    { hreflang: "en", href: `https://alexgetman.com/en/posts/${id}/` },
+    { hreflang: "ru", href: localUrl },
+    { hreflang: "x-default", href: `https://alexgetman.com/en/posts/${id}/` }
+  ]}
+>
   <main class="post-main">
       
       <!-- Scoped back button -->
@@ -312,7 +325,7 @@ const schema = JSON.stringify(schemaObject);
       {(newerPost || olderPost) && (
           <nav class="post-neighbors" aria-label="Соседние посты">
               {newerPost ? (
-                  <a href={`/posts/${newerPost.id}/`} class="neighbor-card neighbor-card--newer">
+                  <a href={`/ru/posts/${newerPost.id}/`} class="neighbor-card neighbor-card--newer">
                       <span class="neighbor-label">Новее</span>
                       <span class="neighbor-title">{truncateText(newerPost.title, 80)}</span>
                   </a>
@@ -320,7 +333,7 @@ const schema = JSON.stringify(schemaObject);
                   <span class="neighbor-card neighbor-card--empty">Самый свежий пост</span>
               )}
               {olderPost ? (
-                  <a href={`/posts/${olderPost.id}/`} class="neighbor-card neighbor-card--older">
+                  <a href={`/ru/posts/${olderPost.id}/`} class="neighbor-card neighbor-card--older">
                       <span class="neighbor-label">Старее</span>
                       <span class="neighbor-title">{truncateText(olderPost.title, 80)}</span>
                   </a>

@@ -9,39 +9,23 @@ export async function GET(context) {
 
   let parsedData = null;
 
-  if (fs.existsSync(prodFeedJsonPath)) {
-    try {
-      parsedData = JSON.parse(fs.readFileSync(prodFeedJsonPath, 'utf-8'));
-    } catch (e) {
-      console.error(e);
-    }
-  }
-
-  if (!parsedData && fs.existsSync(localFeedJsonPath)) {
-    try {
-      parsedData = JSON.parse(fs.readFileSync(localFeedJsonPath, 'utf-8'));
-    } catch (e) {
-      console.error(e);
+  for (const filePath of [prodFeedJsonPath, localFeedJsonPath]) {
+    if (!parsedData && fs.existsSync(filePath)) {
+      try {
+        parsedData = JSON.parse(fs.readFileSync(filePath, 'utf-8'));
+      } catch (e) {
+        console.error(`Error reading ${filePath}:`, e);
+      }
     }
   }
 
   let feedItems = [];
-  if (parsedData) {
-    if (Array.isArray(parsedData)) {
-      feedItems = parsedData;
-    } else if (parsedData.items && Array.isArray(parsedData.items)) {
-      feedItems = parsedData.items;
-    }
+  if (Array.isArray(parsedData)) {
+    feedItems = parsedData;
+  } else if (parsedData?.items && Array.isArray(parsedData.items)) {
+    feedItems = parsedData.items;
   }
 
-  // Sort by date descending and limit to top 50 items to keep feed size manageable
-  const sortedItems = feedItems
-    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-    .slice(0, 50);
-
-  const channelUsername = "iAlexeyRu";
-  
-  // Title truncation helper
   function cleanText(text) {
     return (text || "").replace(/\n{3,}/g, "\n\n").trim();
   }
@@ -56,21 +40,27 @@ export async function GET(context) {
     return text.slice(0, Math.max(0, limit - 1)).trimEnd() + "…";
   }
 
+  const sortedItems = feedItems
+    .filter(item => item.text_en)
+    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+    .slice(0, 50);
+
   return rss({
-    title: 'Алексей Гетманец | Сливы и новости ИИ',
-    description: 'Сливы и новости ИИ от Алексея Гетманца: короткая Telegram-лента, RSS и статические страницы постов.',
-    site: context.site || 'https://ialexey.ru',
+    title: 'Alex Getman | AI, automation and self-hosted systems',
+    description: 'English updates from Alex Getman: AI news, automation, developer tools, self-hosted systems and translated Telegram posts.',
+    site: context.site || 'https://alexgetman.com',
     items: sortedItems.map((item) => {
-      const id = item.message_id || item.id.split(':').pop();
-      const title = truncateText(item.text || "", 86) || `Пост Telegram ${id}`;
+      const id = item.message_id || item.id?.split(':').pop();
+      const text = item.text_en || item.text || "";
+      const title = truncateText(text, 86) || `Telegram post ${id}`;
       return {
-        title: title,
+        title,
         pubDate: new Date(item.date),
-        description: item.html || item.text,
-        link: `/posts/${id}/`,
-        customData: `<source url="${item.url || `https://t.me/${channelUsername}/${id}`}">${channelUsername}</source>`
+        description: item.html_en || item.text_en,
+        link: `/en/posts/${id}/`,
+        customData: `<source url="${item.url || `https://t.me/alexgetmancom/${id}`}">alexgetmancom</source>`
       };
     }),
-    customData: `<language>ru</language>`,
+    customData: `<language>en</language>`,
   });
 }

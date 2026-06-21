@@ -5,9 +5,8 @@ import sharp from 'sharp';
 const root = process.cwd();
 const habrDir = path.join(root, 'public', 'habr-images');
 const publicDir = path.join(root, 'public');
+const cacheFile = path.join(root, '.image-cache.json');
 const widths = [360, 640, 960];
-const youtubeChannelFeed = 'https://www.youtube.com/feeds/videos.xml?channel_id=UCMFl8-kqE8n9cyErKFSbPuQ';
-const fallbackYoutubeId = 'e-RHZvID8q8';
 
 async function exists(filePath) {
   try {
@@ -18,13 +17,29 @@ async function exists(filePath) {
   }
 }
 
-async function needsUpdate(inputPath, outputPath) {
+// Load cache
+let cache = {};
+if (await exists(cacheFile)) {
   try {
-    const [inputStat, outputStat] = await Promise.all([
-      fs.stat(inputPath),
-      fs.stat(outputPath),
-    ]);
-    return outputStat.mtimeMs < inputStat.mtimeMs;
+    cache = JSON.parse(await fs.readFile(cacheFile, 'utf-8'));
+  } catch {}
+}
+
+async function saveCache() {
+  try {
+    await fs.writeFile(cacheFile, JSON.stringify(cache, null, 2), 'utf-8');
+  } catch {}
+}
+
+async function needsUpdate(inputPath, key) {
+  try {
+    const stat = await fs.stat(inputPath);
+    const mtime = stat.mtimeMs;
+    if (cache[key] === mtime) {
+      return false; // File has not changed
+    }
+    cache[key] = mtime;
+    return true;
   } catch {
     return true;
   }
@@ -42,6 +57,14 @@ async function generateHabrImages() {
     }
 
     const inputPath = path.join(habrDir, file);
+    const key = `habr-images/${file}`;
+    
+    // Check cache manifest
+    const updated = await needsUpdate(inputPath, key);
+    if (!updated) {
+      continue; // Skip fs.stat check for generated responsive outputs entirely
+    }
+
     const parsed = path.parse(file);
     const image = sharp(inputPath);
     const metadata = await image.metadata();
@@ -52,9 +75,6 @@ async function generateHabrImages() {
         continue;
       }
       const outputPath = path.join(habrDir, `${parsed.name}-${width}.webp`);
-      if (!(await needsUpdate(inputPath, outputPath))) {
-        continue;
-      }
       await sharp(inputPath)
         .resize({ width, withoutEnlargement: true })
         .webp({ quality: 74, effort: 6 })
@@ -69,11 +89,13 @@ async function generateAvatar() {
     return;
   }
 
-  const outputPath = path.join(publicDir, 'avatar-small.webp');
-  if (!(await needsUpdate(inputPath, outputPath))) {
+  const key = 'avatar-small';
+  const updated = await needsUpdate(inputPath, key);
+  if (!updated) {
     return;
   }
 
+  const outputPath = path.join(publicDir, 'avatar-small.webp');
   await sharp(inputPath)
     .resize({ width: 72, height: 72, fit: 'cover' })
     .webp({ quality: 76, effort: 6 })
@@ -86,75 +108,20 @@ async function generateSocialImage() {
     return;
   }
 
-  const outputPath = path.join(publicDir, 'social-image.jpg');
-  if (!(await needsUpdate(inputPath, outputPath))) {
+  const key = 'avatar';
+  const updated = await needsUpdate(inputPath, key);
+  if (!updated) {
     return;
   }
 
+  const outputPath = path.join(publicDir, 'social-image.jpg');
   await sharp(inputPath)
     .resize({ width: 500, height: 500, fit: 'cover' })
     .jpeg({ quality: 82, mozjpeg: true })
     .toFile(outputPath);
 }
 
-async function getLatestCompletedYoutubeId() {
-  try {
-    const response = await fetch(youtubeChannelFeed);
-    if (!response.ok) {
-      return fallbackYoutubeId;
-    }
-
-    const xmlText = await response.text();
-    const entryRegex = /<entry>([\s\S]*?)<\/entry>/g;
-    let match;
-
-    while ((match = entryRegex.exec(xmlText)) !== null) {
-      const entryContent = match[1];
-      const idMatch = entryContent.match(/<yt:videoId>([^<]+)<\/yt:videoId>/);
-      const titleMatch = entryContent.match(/<title>([^<]+)<\/title>/);
-      if (!idMatch || !titleMatch) {
-        continue;
-      }
-
-      const title = titleMatch[1].trim().toLowerCase();
-      if (
-        title.includes('ожидаем') ||
-        title.includes('ожидани') ||
-        title.includes('waiting') ||
-        title.includes('upcoming')
-      ) {
-        continue;
-      }
-
-      return idMatch[1].trim();
-    }
-  } catch {
-    return fallbackYoutubeId;
-  }
-
-  return fallbackYoutubeId;
-}
-
-async function generateStreamCover() {
-  const videoId = await getLatestCompletedYoutubeId();
-  const outputPath = path.join(publicDir, `stream-cover-${videoId}.webp`);
-  if (await exists(outputPath)) {
-    return;
-  }
-
-  const response = await fetch(`https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`);
-  if (!response.ok) {
-    return;
-  }
-
-  const source = Buffer.from(await response.arrayBuffer());
-  await sharp(source)
-    .resize({ width: 640, withoutEnlargement: true })
-    .webp({ quality: 76, effort: 6 })
-    .toFile(outputPath);
-}
-
 await generateHabrImages();
 await generateAvatar();
 await generateSocialImage();
-await generateStreamCover();
+await saveCache();

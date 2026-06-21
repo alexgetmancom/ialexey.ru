@@ -24,7 +24,7 @@ SITE_INDEX = Path(os.environ.get("SITE_INDEX", "/home/deploy/ialexey-web/index.h
 SOURCE_INDEX = Path(os.environ.get("SOURCE_INDEX", "/home/deploy/repos/ialexey-web/index.html"))
 SITE_ROOT = Path(os.environ.get("SITE_ROOT", str(SITE_INDEX.parent)))
 WEBHOOK_PATH = os.environ.get("WEBHOOK_PATH", "/tg-feed/webhook")
-PUBLIC_BASE_URL = os.environ.get("PUBLIC_BASE_URL", "https://ialexey.ru").rstrip("/")
+PUBLIC_BASE_URL = os.environ.get("PUBLIC_BASE_URL", "https://alexgetman.com").rstrip("/")
 PORT = int(os.environ.get("PORT", "8788"))
 MAX_ITEMS = int(os.environ.get("MAX_ITEMS", "12"))
 
@@ -82,7 +82,7 @@ def site_url(path="/"):
 
 
 def public_url_host():
-    return urlparse(PUBLIC_BASE_URL).netloc or "ialexey.ru"
+    return urlparse(PUBLIC_BASE_URL).netloc or "alexgetman.com"
 
 
 def parse_date(value):
@@ -867,7 +867,7 @@ def serve():
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Лента Telegram для ialexey.ru")
+    parser = argparse.ArgumentParser(description="Лента Telegram для alexgetman.com")
     parser.add_argument("command", choices=["serve", "render", "seed-public", "set-webhook", "webhook-info"])
     args = parser.parse_args()
 

@@ -1,6 +1,6 @@
-# ialexey.ru
+# alexgetman.com
 
-Статический лендинг для [ialexey.ru](https://ialexey.ru).
+Статический лендинг для [alexgetman.com](https://alexgetman.com).
 
 ## Состав репозитория
 
@@ -47,7 +47,7 @@ git push
 
 ## Nginx cache headers
 
-Для PageSpeed важно, чтобы fingerprinted ассеты и изображения отдавались с явным TTL. В server block `ialexey.ru` нужно подключить:
+Для PageSpeed важно, чтобы fingerprinted ассеты и изображения отдавались с явным TTL. В server block `alexgetman.com` нужно подключить:
 
 ```nginx
 include /home/deploy/repos/ialexey-web/deploy/nginx/ialexey-cache.conf;
@@ -59,6 +59,9 @@ include /home/deploy/repos/ialexey-web/deploy/nginx/ialexey-cache.conf;
 sudo nginx -t
 sudo systemctl reload nginx
 ```
+
+Полный пример server block для нового домена лежит в `deploy/nginx/alexgetman.com.conf.example`.
+Заметки по Cloudflare DNS и ограничению с оранжевым облаком по странам лежат в `docs/alexgetman-cloudflare.md`.
 
 ## Что удалено из старого снимка сервера
 Вся логика локального сервера-заглушки перенесена в удобную структуру репозитория. Динамические файлы данных (`feed/data/`), логи и файл секретов (`feed/ialexey-feed.env`) добавлены в `.gitignore`, чтобы не скомпрометировать конфиденциальные токены в публичном репозитории.

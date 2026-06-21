@@ -28,14 +28,13 @@ function loadFeedItems() {
 }
 
 export async function GET() {
-  const items = loadFeedItems()
+  const rawItems = loadFeedItems();
+  const items = rawItems
     .filter(item => item.text_en)
     .map(item => ({
       ...item,
       text: item.text_en,
-      html: item.html_en || item.text_en,
-      canonical_url: `https://alexgetman.com/en/posts/${item.message_id || item.id?.split(':').pop()}/`,
-      ru_url: `https://alexgetman.com/ru/posts/${item.message_id || item.id?.split(':').pop()}/`
+      html: item.html_en || item.text_en
     }))
     .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
     .slice(0, 50);

@@ -1,13 +1,13 @@
 {
   "openapi": "3.0.3",
   "info": {
-    "title": "iAlexey.ru API",
-    "description": "API endpoints for ialexey.ru including Telegram feed feed and simple pageview tracking.",
+    "title": "alexgetman.com API",
+    "description": "API endpoints for alexgetman.com including Telegram feed feed and simple pageview tracking.",
     "version": "1.0.0"
   },
   "servers": [
     {
-      "url": "https://ialexey.ru"
+      "url": "https://alexgetman.com"
     }
   ],
   "paths": {

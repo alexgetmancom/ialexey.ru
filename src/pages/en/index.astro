@@ -1,0 +1,210 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import projects from '../../data/projects.json';
+
+const title = "English archive — Alex Getman | alexgetmancom";
+const description = "English post archive for alexgetmancom: AI, development, automation, self-hosted projects and translated posts.";
+
+const schema = JSON.stringify({
+  "@context": "https://schema.org",
+  "@type": "CollectionPage",
+  "name": title,
+  "description": description,
+  "url": "https://alexgetman.com/en/",
+  "inLanguage": "en-US"
+});
+---
+
+<Layout
+  title={title}
+  description={description}
+  schema={schema}
+  canonicalUrl="https://alexgetman.com/en/"
+  lang="en"
+  siteName="Alex Getman"
+  rssHref="/feed.xml"
+  alternateLinks={[
+    { hreflang: "en", href: "https://alexgetman.com/en/" },
+    { hreflang: "ru", href: "https://alexgetman.com/ru/" },
+    { hreflang: "x-default", href: "https://alexgetman.com/" }
+  ]}
+>
+  <main class="en-page">
+    <section class="en-hero" aria-labelledby="en-title">
+      <p class="en-hero__eyebrow">alexgetmancom / en</p>
+      <h1 class="en-hero__title" id="en-title">AI, development, automation and self-hosted projects</h1>
+      <p class="en-hero__text">
+        English posts will appear here after translation from the Russian source flow. The current hub already tracks public projects, community links and open-source work.
+      </p>
+      <div class="en-hero__actions">
+        <a href="/ru/" class="en-link">RU feed</a>
+        <a href="/projects/" class="en-link">Projects</a>
+        <a href="/contacts/" class="en-link">Contacts</a>
+      </div>
+    </section>
+
+    <section class="en-section" aria-labelledby="en-flow-title">
+      <h2 class="en-section__title" id="en-flow-title">Publishing flow</h2>
+      <div class="flow-grid">
+        <div class="flow-card">
+          <span class="flow-card__label">Source</span>
+          <p>Telegram @alexgetmancom</p>
+        </div>
+        <div class="flow-card">
+          <span class="flow-card__label">Translation</span>
+          <p>RU text post -> English translation</p>
+        </div>
+        <div class="flow-card">
+          <span class="flow-card__label">Distribution</span>
+          <p>Site /en, Threads EN, X, Facebook and LinkedIn</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="en-section" aria-labelledby="en-projects-title">
+      <h2 class="en-section__title" id="en-projects-title">Public projects</h2>
+      <div class="project-mini-grid">
+        {projects.slice(0, 4).map((project) => (
+          <a href={project.url} class="project-mini-card" target="_blank" rel="noopener noreferrer">
+            <span class="project-mini-card__kind">{project.kind}</span>
+            <strong>{project.name}</strong>
+            <span>{project.accent}</span>
+          </a>
+        ))}
+      </div>
+    </section>
+  </main>
+</Layout>
+
+<style>
+  .en-page {
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 1rem 0 3rem;
+    min-width: 0;
+  }
+
+  .en-hero {
+    margin-bottom: 2rem;
+    min-width: 0;
+  }
+
+  .en-hero__eyebrow {
+    margin: 0 0 0.5rem;
+    color: var(--accent);
+    font-family: var(--font-mono);
+    font-size: 0.78rem;
+    font-weight: 800;
+  }
+
+  .en-hero__title {
+    margin: 0;
+    color: var(--text-header);
+    font-size: clamp(2rem, 5vw, 4rem);
+    line-height: 1.04;
+    letter-spacing: 0;
+    overflow-wrap: anywhere;
+  }
+
+  .en-hero__text {
+    margin: 1rem 0 0;
+    color: var(--text-secondary);
+    max-width: 720px;
+    font-size: 1.02rem;
+    line-height: 1.6;
+    overflow-wrap: anywhere;
+  }
+
+  .en-hero__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.6rem;
+    margin-top: 1.2rem;
+  }
+
+  .en-link {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 38px;
+    padding: 0.45rem 0.8rem;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--card-bg);
+    color: var(--text-main);
+    font-weight: 700;
+  }
+
+  .en-link:hover {
+    color: var(--text-header);
+    border-color: var(--border-hover);
+    background: var(--accent-glow);
+  }
+
+  .en-section {
+    margin-top: 1.5rem;
+    min-width: 0;
+  }
+
+  .en-section__title {
+    margin: 0 0 0.75rem;
+    color: var(--text-header);
+    font-size: 1rem;
+  }
+
+  .flow-grid,
+  .project-mini-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.8rem;
+  }
+
+  .project-mini-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .flow-card,
+  .project-mini-card {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    padding: 1rem;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--card-bg);
+    min-width: 0;
+  }
+
+  .flow-card__label,
+  .project-mini-card__kind {
+    color: var(--accent);
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    font-weight: 800;
+  }
+
+  .flow-card p,
+  .project-mini-card span,
+  .project-mini-card strong {
+    margin: 0;
+    overflow-wrap: anywhere;
+  }
+
+  .flow-card p,
+  .project-mini-card span {
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    line-height: 1.45;
+  }
+
+  .project-mini-card strong {
+    color: var(--text-header);
+  }
+
+  @media (max-width: 760px) {
+    .flow-grid,
+    .project-mini-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>

@@ -1,14 +1,14 @@
 ---
 import fs from 'node:fs';
 import path from 'node:path';
-import Layout from '../../layouts/Layout.astro';
+import Layout from '../../../layouts/Layout.astro';
 import {
   getFirstSentence,
   truncateText,
   getSmartBadge,
   formatDate,
   sanitizeHtml
-} from '../../utils/helpers';
+} from '../../../utils/helpers';
 
 // getStaticPaths is required in Astro static mode for dynamic routes
 export async function getStaticPaths() {
@@ -46,11 +46,19 @@ export async function getStaticPaths() {
     }
   }
 
-  // Sort items by date descending to find the newest posts
-  const sortedItems = [...feedItems].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  // Filter by text_en and sort items by date descending to find the newest posts
+  const filteredItems = feedItems.filter((item: any) => item.text_en);
+  const sortedItems = [...filteredItems].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
   return sortedItems.map((item: any) => {
-    const id = item.message_id || item.id.split(':').pop();
+    // Map item text and html to translated English versions
+    const enItem = {
+      ...item,
+      text: item.text_en,
+      html: item.html_en || item.text_en
+    };
+
+    const id = enItem.message_id || enItem.id.split(':').pop();
     const currentIndex = sortedItems.findIndex((x: any) => {
       const xId = x.message_id || x.id.split(':').pop();
       return String(xId) === String(id);
@@ -67,7 +75,7 @@ export async function getStaticPaths() {
       .slice(0, 3)
       .map((x: any) => ({
         id: x.message_id || x.id.split(':').pop(),
-        title: getFirstSentence(x.text || ""),
+        title: getFirstSentence(x.text_en || ""),
         date: x.date,
         image: x.image
       }));
@@ -75,16 +83,16 @@ export async function getStaticPaths() {
     return {
       params: { id: String(id) },
       props: {
-        item,
+        item: enItem,
         latestPosts,
         newerPost: newerItem ? {
           id: newerItem.message_id || newerItem.id.split(':').pop(),
-          title: getFirstSentence(newerItem.text || ""),
+          title: getFirstSentence(newerItem.text_en || ""),
           date: newerItem.date
         } : null,
         olderPost: olderItem ? {
           id: olderItem.message_id || olderItem.id.split(':').pop(),
-          title: getFirstSentence(olderItem.text || ""),
+          title: getFirstSentence(olderItem.text_en || ""),
           date: olderItem.date
         } : null
       },
@@ -116,7 +124,7 @@ const { id } = Astro.params;
 const { item, latestPosts, newerPost, olderPost } = Astro.props as Props;
 
 const channelUsername = "alexgetmancom";
-const siteAuthor = "Алексей Гетманец";
+const siteAuthor = "Alex Getman";
 
 // Scoped split post helper is kept locally since it performs the HTML tag index traversal
 
@@ -185,10 +193,10 @@ function splitPostContent(text: string, html: string) {
 
 const { title: postTitle, titleHtml: postTitleHtml, bodyHtml: postBodyHtml } = splitPostContent(item.text || "", item.html || "");
 
-const pageMetaTitle = postTitle || `Пост Telegram ${id}`;
-const postDescription = truncateText(postBodyHtml.replace(/<[^>]+>/g, '') || item.text || "", 220) || "Сливы и новости ИИ от Алексея Гетманца: короткая Telegram-лента, RSS и статические страницы постов.";
+const pageMetaTitle = postTitle || `Telegram Post ${id}`;
+const postDescription = truncateText(postBodyHtml.replace(/<[^>]+>/g, '') || item.text || "", 220) || "AI leaks and news from Alexey Getmanets: short Telegram feed, RSS, and static post pages.";
 
-const localUrl = `https://alexgetman.com/ru/posts/`;
+const localUrl = `https://alexgetman.com/en/posts/${id}/`;
 const telegramUrl = item.url || `https://t.me/${channelUsername}/${id}`;
 
 
@@ -208,7 +216,7 @@ const schemaObject = {
   "url": localUrl,
   "datePublished": item.date,
   "dateModified": item.date,
-  "inLanguage": "ru-RU",
+  "inLanguage": "en-US",
   "author": {
     "@type": "Person",
     "name": siteAuthor,
@@ -225,13 +233,26 @@ const schemaObject = {
 
 const schema = JSON.stringify(schemaObject);
 ---
-<Layout title={`${pageMetaTitle} | ${siteAuthor}`} description={postDescription} schema={schema} canonicalUrl={localUrl}>
+<Layout
+  title={`${pageMetaTitle} | ${siteAuthor}`}
+  description={postDescription}
+  schema={schema}
+  canonicalUrl={localUrl}
+  lang="en"
+  siteName="Alex Getman"
+  rssHref="/feed.xml"
+  alternateLinks={[
+    { hreflang: "en", href: localUrl },
+    { hreflang: "ru", href: `https://alexgetman.com/ru/posts/${id}/` },
+    { hreflang: "x-default", href: localUrl }
+  ]}
+>
   <main class="post-main">
       
       <!-- Scoped back button -->
-      <a class="back-link" href="/">
+      <a class="back-link" href="/en/">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="back-arrow"><path d="m15 18-6-6 6-6"/></svg>
-          <span>На главную</span>
+          <span>Home</span>
       </a>
 
       <article class="post-article">
@@ -272,7 +293,7 @@ const schema = JSON.stringify(schemaObject);
           <div class="article-body" set:html={sanitizeHtml(postBodyHtml || item.html || item.text)}></div>
 
           <a href={telegramUrl} target="_blank" rel="noopener noreferrer" class="original-link">
-              <span>Открыть оригинал в Telegram</span>
+              <span>Open original in Telegram</span>
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17 17 7"/><path d="M7 7h10v10"/></svg>
           </a>
 
@@ -282,7 +303,7 @@ const schema = JSON.stringify(schemaObject);
           <!-- Share Bar with Likes -->
           <div class="share-bar">
               <div class="likes-container">
-                  <button class="like-btn" id="like-btn" data-post-id={id} aria-label="Поставить лайк">
+                  <button class="like-btn" id="like-btn" data-post-id={id} aria-label="Like this post">
                       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="like-btn-icon">
                           <path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/>
                       </svg>
@@ -290,7 +311,7 @@ const schema = JSON.stringify(schemaObject);
                   </button>
               </div>
               <div class="share-buttons-wrap">
-                  <span class="share-title">Поделиться:</span>
+                  <span class="share-title">Share:</span>
                   <div class="share-buttons">
                       <a href={`https://t.me/share/url?url=${encodeURIComponent(localUrl)}&text=${encodeURIComponent(postTitle)}`} target="_blank" rel="noopener noreferrer" class="share-btn share-btn--telegram" aria-label="Поделиться в Telegram">
                           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="share-btn-icon tg-icon-stroke"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg>
@@ -300,9 +321,9 @@ const schema = JSON.stringify(schemaObject);
                           <svg viewBox="0 0 24 24" fill="currentColor" class="share-btn-icon"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
                           <span>X (Twitter)</span>
                       </a>
-                      <button class="share-btn share-btn--copy" id="copy-link-btn" data-url={localUrl} aria-label="Скопировать ссылку">
+                      <button class="share-btn share-btn--copy" id="copy-link-btn" data-url={localUrl} aria-label="Copy link">
                           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="share-btn-icon"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
-                          <span id="copy-btn-text">Ссылка</span>
+                          <span id="copy-btn-text">Link</span>
                       </button>
                   </div>
               </div>
@@ -310,22 +331,22 @@ const schema = JSON.stringify(schemaObject);
       </article>
 
       {(newerPost || olderPost) && (
-          <nav class="post-neighbors" aria-label="Соседние посты">
+          <nav class="post-neighbors" aria-label="Neighbor posts">
               {newerPost ? (
-                  <a href={`/posts/${newerPost.id}/`} class="neighbor-card neighbor-card--newer">
-                      <span class="neighbor-label">Новее</span>
+                  <a href={`/en/posts/${newerPost.id}/`} class="neighbor-card neighbor-card--newer">
+                      <span class="neighbor-label">Newer</span>
                       <span class="neighbor-title">{truncateText(newerPost.title, 80)}</span>
                   </a>
               ) : (
-                  <span class="neighbor-card neighbor-card--empty">Самый свежий пост</span>
+                  <span class="neighbor-card neighbor-card--empty">Latest post</span>
               )}
               {olderPost ? (
-                  <a href={`/posts/${olderPost.id}/`} class="neighbor-card neighbor-card--older">
-                      <span class="neighbor-label">Старее</span>
+                  <a href={`/en/posts/${olderPost.id}/`} class="neighbor-card neighbor-card--older">
+                      <span class="neighbor-label">Older</span>
                       <span class="neighbor-title">{truncateText(olderPost.title, 80)}</span>
                   </a>
               ) : (
-                  <span class="neighbor-card neighbor-card--empty">Более ранних постов нет</span>
+                  <span class="neighbor-card neighbor-card--empty">No older posts</span>
               )}
           </nav>
       )}
@@ -340,10 +361,10 @@ const schema = JSON.stringify(schemaObject);
       <!-- Related Posts Section -->
       {latestPosts && latestPosts.length > 0 && (
           <div class="related-posts">
-              <h2 class="related-title">Читайте также</h2>
+              <h2 class="related-title">Read also</h2>
               <div class="related-grid">
                   {latestPosts.map((post) => {
-                      const postUrl = `/posts/${post.id}/`;
+                      const postUrl = `/en/posts/${post.id}/`;
                       const smartBadge = getSmartBadge(post.title);
                       return (
                           <a href={postUrl} class="related-card">
@@ -371,7 +392,7 @@ const schema = JSON.stringify(schemaObject);
   <!-- Lightbox Modal -->
   <div id="lightbox-modal" class="lightbox-modal">
       <span class="lightbox-close">&times;</span>
-      <img class="lightbox-content" id="lightbox-img" alt="Увеличенное изображение" />
+      <img class="lightbox-content" id="lightbox-img" alt="Enlarged image" />
   </div>
 </Layout>
 
@@ -980,10 +1001,10 @@ const schema = JSON.stringify(schemaObject);
       copyBtn.addEventListener('click', () => {
           const url = copyBtn.getAttribute('data-url') || window.location.href;
           navigator.clipboard.writeText(url).then(() => {
-              copyText.textContent = 'Скопировано!';
+              copyText.textContent = 'Copied!';
               copyBtn.classList.add('copied');
               setTimeout(() => {
-                  copyText.textContent = 'Ссылка';
+                  copyText.textContent = 'Link';
                   copyBtn.classList.remove('copied');
               }, 2000);
           }).catch(err => {
@@ -1098,7 +1119,7 @@ const schema = JSON.stringify(schemaObject);
           reactionsEnabled: "0",
           emitMetadata: "0",
           inputPosition: "bottom",
-          lang: "ru",
+          lang: "en",
       };
 
       const savedTheme = localStorage.getItem('theme') || 'dark';
