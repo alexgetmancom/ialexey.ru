@@ -41,7 +41,7 @@ export async function GET(context) {
   }
 
   const sortedItems = feedItems
-    .filter(item => item.text_en)
+    .filter(item => item.has_en && item.text_en && item.post_id)
     .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
     .slice(0, 50);
 
@@ -50,15 +50,15 @@ export async function GET(context) {
     description: 'English updates from Alex Getman: AI news, automation, developer tools, self-hosted systems and translated Telegram posts.',
     site: context.site || 'https://alexgetman.com',
     items: sortedItems.map((item) => {
-      const id = item.message_id || item.id?.split(':').pop();
+      const id = item.post_id;
       const text = item.text_en || item.text || "";
       const title = truncateText(text, 86) || `Telegram post ${id}`;
       return {
         title,
         pubDate: new Date(item.date),
         description: item.html_en || item.text_en,
-        link: `/en/posts/${id}/`,
-        customData: `<source url="${item.url || `https://t.me/alexgetmancom/${id}`}">alexgetmancom</source>`
+        link: `/${id}/${item.slug_en}/`,
+        customData: item.url ? `<source url="${item.url}">alexgetmancom</source>` : undefined
       };
     }),
     customData: `<language>en</language>`,

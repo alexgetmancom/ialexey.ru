@@ -91,10 +91,11 @@ export async function GET(context) {
     lines.push("- No English posts yet.");
   } else {
     for (const item of sortedItems.slice(0, 30)) {
-      const id = item.message_id || item.id?.split(':').pop();
+      const id = item.post_id;
       const title = truncateText(item.text_en || item.text || "", 86) || `Telegram post ${id}`;
       const date = formatDate(item.date);
-      lines.push(`- [${title}](${siteUrl}/en/posts/${id}/) - ${date} MSK`);
+      if (!item.has_en || !id) continue;
+      lines.push(`- [${title}](${siteUrl}/${id}/${item.slug_en}/) - ${date} MSK`);
     }
   }
 

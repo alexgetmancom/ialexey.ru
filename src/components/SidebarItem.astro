@@ -19,8 +19,8 @@ const { item, index } = Astro.props;
 const timeStr = formatTimeOnly(item.date);
 const textContent = (item.text || "").trim();
 const titleRaw = item.title ? item.title : getFirstSentence(textContent);
-const title = truncateText(removeLeadingEmoji(titleRaw), 120) || `Обновление ленты ${item.message_id}`;
-const postUrl = getPostPath(item);
+const title = truncateText(removeLeadingEmoji(titleRaw), 120) || `Публикация ${item.post_id}`;
+const postUrl = getPostPath(item, 'ru');
 const isHidden = index >= 10;
 const badge = getSmartBadge(item.text);
 ---

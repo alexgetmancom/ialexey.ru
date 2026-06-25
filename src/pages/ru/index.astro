@@ -59,6 +59,7 @@ if (parsedData) {
 
 // Sort items by date descending
 const sortedItems = feedItems
+  .filter((item) => item.has_ru && item.post_id)
   .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
 // Schema.org dynamic markup
@@ -132,7 +133,7 @@ const schemaObject = {
         return {
           "@type": "ListItem",
           "position": idx + 1,
-          "url": `https://alexgetman.com${getPostPath(item)}`,
+          "url": `https://alexgetman.com${getPostPath(item, 'ru')}`,
           "name": truncateText(titleRaw, 60)
         };
       })
@@ -187,7 +188,7 @@ const communityLinks = [
 ];
 
 const featuredProjects = projects.slice(0, 4);
-const getRuPostPath = (item) => `/ru${getPostPath(item)}`;
+const getRuPostPath = (item) => getPostPath(item, 'ru');
 ---
 <Layout
   title={`RU — ${siteTitle}`}
@@ -240,7 +241,7 @@ const getRuPostPath = (item) => `/ru${getPostPath(item)}`;
                               const timeStr = formatTimeOnly(item.date);
                               const textContent = (item.text || "").trim();
                               const titleRaw = item.title ? item.title : getFirstSentence(textContent);
-                              const title = truncateText(removeLeadingEmoji(titleRaw), 105) || `Новость из Telegram ${item.message_id}`;
+                              const title = truncateText(removeLeadingEmoji(titleRaw), 105) || `Публикация ${item.post_id}`;
                               const postUrl = getRuPostPath(item);
                               const badgeClass = getSmartBadge(item.text || "").class;
                               return (
@@ -440,7 +441,7 @@ const getRuPostPath = (item) => `/ru${getPostPath(item)}`;
                             const timeStr = formatTimeOnly(item.date);
                             const textContent = (item.text || "").trim();
                             const titleRaw = item.title ? item.title : getFirstSentence(textContent);
-                            const title = truncateText(removeLeadingEmoji(titleRaw), 110) || `Новость из Telegram ${item.message_id}`;
+                            const title = truncateText(removeLeadingEmoji(titleRaw), 110) || `Публикация ${item.post_id}`;
                             const postUrl = getRuPostPath(item);
                             const badge = getSmartBadge(item.text || "");
                             

@@ -126,13 +126,17 @@ export function getSmartBadge(text: string): { label: string; class: string; emo
   return { label: "Новости", class: "badge--news", emoji: "📰" };
 }
 
-export function getPostPath(item: any): string {
+export function getPostPath(item: any, locale = 'en'): string {
   if (!item) return "/";
   if (typeof item === 'object') {
-    const messageId = item.message_id || item.id?.split(':').pop();
-    return `/posts/${messageId}/`;
+    const postId = item.post_id;
+    if (!postId) return "/";
+    if (locale === 'ru') {
+      return `/ru/${postId}/${item.slug_ru || `post-${postId}`}/`;
+    }
+    return `/${postId}/${item.slug_en || `post-${postId}`}/`;
   }
-  return `/posts/${item}/`;
+  return `/${item}/post-${item}/`;
 }
 
 export function formatViewsCount(views: number): string {

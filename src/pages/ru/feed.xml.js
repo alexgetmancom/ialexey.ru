@@ -36,6 +36,7 @@ export async function GET(context) {
 
   // Sort by date descending and limit to top 50 items to keep feed size manageable
   const sortedItems = feedItems
+    .filter(item => item.has_ru && item.post_id)
     .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
     .slice(0, 50);
 
@@ -61,14 +62,14 @@ export async function GET(context) {
     description: 'Сливы и новости ИИ от Алексея Гетманца: короткая Telegram-лента, RSS и статические страницы постов.',
     site: context.site || 'https://alexgetman.com',
     items: sortedItems.map((item) => {
-      const id = item.message_id || item.id.split(':').pop();
+      const id = item.post_id;
       const title = truncateText(item.text || "", 86) || `Пост Telegram ${id}`;
       return {
         title: title,
         pubDate: new Date(item.date),
         description: item.html || item.text,
-        link: `/ru/posts/${id}/`,
-        customData: `<source url="${item.url || `https://t.me/${channelUsername}/${id}`}">${channelUsername}</source>`
+        link: `/ru/${id}/${item.slug_ru}/`,
+        customData: item.url ? `<source url="${item.url}">${channelUsername}</source>` : undefined
       };
     }),
     customData: `<language>ru</language>`,

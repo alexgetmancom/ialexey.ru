@@ -70,15 +70,17 @@ function loadFeedItems() {
 
 
 function telegramToSearchItem(item) {
-  const messageId = item.message_id || String(item.id || '').split(':').pop();
+  const postId = item.post_id;
   const text = compactText(item.text || item.html || '');
-  const title = compactText(item.title || getFirstSentence(item.text || text)) || `Новость Telegram ${messageId}`;
+  const title = compactText(item.title || getFirstSentence(item.text || text)) || `Публикация ${postId}`;
   return {
-    id: `telegram:${messageId}`,
-    type: 'telegram',
+    id: `post:${postId}`,
+    type: 'post',
     title: truncateText(title, 120),
     excerpt: truncateText(text.replace(title, ''), 180) || truncateText(text, 180),
-    url: `/posts/${messageId}/`,
+    url: item.has_en
+      ? `/${postId}/${item.slug_en}/`
+      : `/ru/${postId}/${item.slug_ru}/`,
     date: item.date,
     source: 'Telegram',
     category: getSmartBadge(item.text || text),

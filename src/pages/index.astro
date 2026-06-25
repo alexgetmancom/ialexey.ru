@@ -28,15 +28,15 @@ if (Array.isArray(parsedData)) {
 }
 
 const latestEnglishPosts = feedItems
-  .filter((item) => item.text_en)
+  .filter((item) => item.has_en && item.text_en && item.post_id)
   .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
   .slice(0, 8)
   .map((item) => {
-    const id = item.message_id || item.id?.split(':').pop();
+    const id = item.post_id;
     const text = item.text_en || item.text || "";
     return {
       id,
-      url: `/en/posts/${id}/`,
+      url: `/${id}/${item.slug_en}/`,
       title: getFirstSentence(text) || `Telegram post ${id}`,
       excerpt: truncateText(text, 180),
       date: item.date
@@ -138,7 +138,7 @@ function formatDate(value) {
     <section class="section" aria-labelledby="posts-title">
       <div class="section__header">
         <h2 class="section__title" id="posts-title">Latest English posts</h2>
-        <a href="/en/feed.json" class="section__link">JSON feed</a>
+        <a href="/feed.json" class="section__link">JSON feed</a>
       </div>
       <div class="post-list">
         {latestEnglishPosts.length > 0 ? latestEnglishPosts.map((post) => (
