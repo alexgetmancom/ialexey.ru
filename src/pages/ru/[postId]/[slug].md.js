@@ -26,7 +26,7 @@ export async function getStaticPaths() {
     }
   }
 
-  const filteredItems = feedItems.filter((item) => item.has_ru && item.text_ru && item.post_id);
+  const filteredItems = feedItems.filter((item) => item.has_ru && item.text && item.post_id);
 
   return filteredItems.map((item) => {
     return {
@@ -41,11 +41,11 @@ export async function GET(context) {
   const siteUrl = context.site ? context.site.toString().replace(/\/$/, '') : 'https://alexgetman.com';
 
   const lines = [
-    `# ${item.text_ru.split('\n')[0] || `Пост ${item.post_id}`}`,
+    `# ${item.text.split('\n')[0] || `Пост ${item.post_id}`}`,
     "",
     `*Опубликовано: ${new Date(item.date).toUTCString()}*`,
     "",
-    item.text_ru || "",
+    item.text || "",
     "",
     "---",
     `[На главную](${siteUrl}/ru/) | [Читать статью](${siteUrl}/ru/${item.post_id}/${item.slug_ru}/)`
