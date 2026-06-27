@@ -1,9 +1,12 @@
 {
-  "resource": "https://ialexey.ru",
+  "resource": "https://alexgetman.com",
   "authorization_servers": [
-    "https://ialexey.ru"
+    "https://alexgetman.com"
   ],
   "scopes_supported": [
     "read:feed"
+  ],
+  "bearer_methods_supported": [
+    "header"
   ]
 }

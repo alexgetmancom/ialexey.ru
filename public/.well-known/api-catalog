@@ -1,22 +1,22 @@
 {
   "linkset": [
     {
-      "anchor": "https://ialexey.ru/",
+      "anchor": "https://alexgetman.com/",
       "service-desc": [
         {
-          "href": "https://ialexey.ru/openapi.json",
+          "href": "https://alexgetman.com/openapi.json",
           "type": "application/json"
         }
       ],
       "service-doc": [
         {
-          "href": "https://ialexey.ru/llms.txt",
+          "href": "https://alexgetman.com/llms.txt",
           "type": "text/plain"
         }
       ],
       "status": [
         {
-          "href": "https://ialexey.ru/tg-feed/healthz",
+          "href": "https://alexgetman.com/tg-feed/healthz",
           "type": "text/plain"
         }
       ]

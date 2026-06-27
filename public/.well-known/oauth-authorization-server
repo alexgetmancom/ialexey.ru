@@ -1,9 +1,9 @@
 {
-  "issuer": "https://ialexey.ru",
-  "authorization_endpoint": "https://ialexey.ru/oauth/authorize",
-  "token_endpoint": "https://ialexey.ru/oauth/token",
-  "jwks_uri": "https://ialexey.ru/oauth/jwks",
-  "registration_endpoint": "https://ialexey.ru/auth.md",
+  "issuer": "https://alexgetman.com",
+  "authorization_endpoint": "https://alexgetman.com/oauth/authorize",
+  "token_endpoint": "https://alexgetman.com/oauth/token",
+  "jwks_uri": "https://alexgetman.com/oauth/jwks",
+  "registration_endpoint": "https://alexgetman.com/auth.md",
   "scopes_supported": [
     "read:feed"
   ],
@@ -14,7 +14,7 @@
     "authorization_code"
   ],
   "agent_auth": {
-    "register_uri": "https://ialexey.ru/auth.md",
+    "register_uri": "https://alexgetman.com/auth.md",
     "supported_identity_types": [
       "organization",
       "individual"
