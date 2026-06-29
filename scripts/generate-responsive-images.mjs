@@ -204,8 +204,8 @@ async function generatePostOgImages(feedItems) {
     if (!postId) continue;
 
     const variants = [
-      { locale: 'en', enabled: item.has_en && item.text_en, text: item.text_en, name: 'Alex Getman', image: postImagePath(item, 'en') },
-      { locale: 'ru', enabled: item.has_ru && item.text, text: item.text, name: 'Алексей Гетманец', image: postImagePath(item, 'ru') },
+      { locale: 'en', enabled: item.has_en && item.text_en, text: item.text_en, image: postImagePath(item, 'en') },
+      { locale: 'ru', enabled: item.has_ru && item.text, text: item.text, image: postImagePath(item, 'ru') },
     ];
 
     for (const variant of variants) {
@@ -215,7 +215,7 @@ async function generatePostOgImages(feedItems) {
       const lines = splitLines(title, variant.locale === 'ru' ? 25 : 28, sourceImage ? 3 : 4);
       const badge = categoryLabel(variant.text, variant.locale);
       const sourceImageStamp = sourceImage ? (await fs.stat(sourceImage)).mtimeMs : 'none';
-      const key = `og:v3:${postId}:${variant.locale}:${compactText(title)}:${badge}:${sourceImageStamp}:${Boolean(avatarDataUri)}`;
+      const key = `og:v4:${postId}:${variant.locale}:${compactText(title)}:${badge}:${sourceImageStamp}:${Boolean(avatarDataUri)}`;
       const outputPath = path.join(outputDir, `post-${postId}-${variant.locale}.jpg`);
 
       if (cache[key] && await exists(outputPath)) continue;
@@ -227,35 +227,22 @@ async function generatePostOgImages(feedItems) {
 
       const svg = sourceImage ? `
         <svg width="1200" height="630" viewBox="0 0 1200 630" xmlns="http://www.w3.org/2000/svg">
-          <rect width="1200" height="630" fill="url(#shade)"/>
-          <rect y="410" width="1200" height="220" fill="url(#bottom)"/>
-          <text x="74" y="86" class="site">alexgetman.com</text>
-          <text x="74" y="280" class="badge">${escapeXml(badge)}</text>
-          ${lineSvg}
-          <g transform="translate(858 520)">
-            ${avatarDataUri ? `<image href="${avatarDataUri}" x="0" y="-34" width="68" height="68" clip-path="url(#avatarClip)"/>` : '<circle cx="34" cy="0" r="34" fill="#F04465"/>'}
-            <text x="86" y="-8" class="author">${escapeXml(variant.name)}</text>
-            <text x="86" y="26" class="post">post ${escapeXml(postId)}</text>
+          <rect width="1200" height="630" fill="url(#corner)"/>
+          <g transform="translate(812 468)">
+            <text x="248" y="43" class="brand">alex</text>
+            <text x="248" y="99" class="brand">getman</text>
+            ${avatarDataUri ? `<image href="${avatarDataUri}" x="276" y="0" width="104" height="104" clip-path="url(#avatarClip)"/>` : '<circle cx="328" cy="52" r="52" fill="#F04465"/>'}
           </g>
           <defs>
-            <linearGradient id="shade" x1="0" x2="1" y1="0" y2="0">
-              <stop offset="0%" stop-color="rgba(0,0,0,0.72)"/>
-              <stop offset="42%" stop-color="rgba(0,0,0,0.36)"/>
-              <stop offset="100%" stop-color="rgba(0,0,0,0.12)"/>
-            </linearGradient>
-            <linearGradient id="bottom" x1="0" x2="0" y1="0" y2="1">
-              <stop offset="0%" stop-color="rgba(0,0,0,0)"/>
-              <stop offset="100%" stop-color="rgba(0,0,0,0.58)"/>
-            </linearGradient>
-            <clipPath id="avatarClip"><circle cx="34" cy="0" r="34"/></clipPath>
+            <radialGradient id="corner" cx="100%" cy="100%" r="58%">
+              <stop offset="0%" stop-color="rgba(0,0,0,0.68)"/>
+              <stop offset="48%" stop-color="rgba(0,0,0,0.20)"/>
+              <stop offset="100%" stop-color="rgba(0,0,0,0)"/>
+            </radialGradient>
+            <clipPath id="avatarClip"><circle cx="52" cy="52" r="52"/></clipPath>
           </defs>
           <style>
-            .site,.badge,.title,.author,.post{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;letter-spacing:0}
-            .site{fill:rgba(255,255,255,0.82);font-size:30px;font-weight:850}
-            .badge{fill:#ff4d70;font-size:30px;font-weight:850}
-            .title{fill:#fff;font-size:60px;font-weight:900;filter:drop-shadow(0 4px 18px rgba(0,0,0,0.7))}
-            .author{fill:#fff;font-size:30px;font-weight:850}
-            .post{fill:rgba(255,255,255,0.72);font-size:23px;font-weight:750}
+            .brand{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;fill:white;font-size:52px;font-weight:900;letter-spacing:0;text-anchor:end;filter:drop-shadow(0 4px 16px rgba(0,0,0,.88))}
           </style>
         </svg>
       ` : `
@@ -267,8 +254,8 @@ async function generatePostOgImages(feedItems) {
           ${lineSvg}
           <g transform="translate(74 520)">
             ${avatarDataUri ? `<image href="${avatarDataUri}" x="0" y="-34" width="68" height="68" clip-path="url(#avatarClip)"/>` : '<circle cx="34" cy="0" r="34" fill="#F04465"/>'}
-            <text x="86" y="-8" class="author">${escapeXml(variant.name)}</text>
-            <text x="86" y="26" class="post">post ${escapeXml(postId)}</text>
+            <text x="86" y="-8" class="author">alex</text>
+            <text x="86" y="26" class="post">getman</text>
           </g>
           <defs>
             <pattern id="grid" width="48" height="48" patternUnits="userSpaceOnUse">
@@ -282,7 +269,7 @@ async function generatePostOgImages(feedItems) {
             .badge{fill:#F04465;font-size:30px}
             .title{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;font-size:58px;font-weight:850;fill:#F3F6FA;letter-spacing:0}
             .author{fill:#F3F6FA;font-size:30px;font-weight:850}
-            .post{fill:#A3ADBC;font-size:23px;font-weight:750}
+            .post{fill:#A3ADBC;font-size:30px;font-weight:850}
           </style>
         </svg>
       `;
@@ -290,8 +277,8 @@ async function generatePostOgImages(feedItems) {
       const base = sourceImage
         ? await sharp(sourceImage)
             .resize({ width: 1200, height: 630, fit: 'cover' })
-            .modulate({ brightness: 0.9, saturation: 0.96 })
-            .jpeg({ quality: 88, mozjpeg: true })
+            .modulate({ brightness: 0.98, saturation: 1.0 })
+            .jpeg({ quality: 92, mozjpeg: true })
             .toBuffer()
         : await sharp({
             create: { width: 1200, height: 630, channels: 3, background: '#080B10' }
