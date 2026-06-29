@@ -51,6 +51,7 @@ const navLabels = {
   home: isRu ? "Главная" : "Home",
   search: isRu ? "Поиск" : "Search",
   archive: isRu ? "Архив" : "Archive",
+  aiModels: isRu ? "ИИ-Модели" : "AI Models",
   contacts: isRu ? "Контакты" : "Contacts",
   searchPlaceholder: isRu ? "Поиск..." : "Search...",
   searchAria: isRu ? "Поиск по сайту" : "Search site",
@@ -64,6 +65,7 @@ const navLabels = {
 const navHomeHref = isRu ? "/ru/#top" : "/#top";
 const navSearchHref = isRu ? "/ru/search/" : "/search/";
 const navArchiveHref = isRu ? "/ru/archive/" : "/archive/";
+const navAiModelsHref = isRu ? "/ru/category/ai-models/" : "/category/ai-models/";
 const navRssHref = isRu ? "/ru/feed.xml" : "/feed.xml";
 ---
 <!DOCTYPE html>
@@ -221,16 +223,49 @@ const navRssHref = isRu ? "/ru/feed.xml" : "/feed.xml";
 
         .header-container {
             display: grid;
-            grid-template-columns: 1fr auto 1fr;
+            grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
             align-items: center;
             gap: 0.75rem;
             padding-top: 0.6rem;
             padding-bottom: 0.6rem;
         }
 
-        .burger-toggle {
+        .header-left {
             justify-self: start;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            min-width: 0;
+        }
+
+        .burger-toggle {
             cursor: pointer;
+        }
+
+        .header-nav {
+            display: flex;
+            align-items: center;
+            gap: 0.35rem;
+            min-width: 0;
+        }
+
+        .header-nav a {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 30px;
+            padding: 0.25rem 0.45rem;
+            border-radius: 8px;
+            color: var(--text-muted);
+            font-size: 0.8rem;
+            font-weight: 800;
+            white-space: nowrap;
+        }
+
+        .header-nav a:hover,
+        .header-nav a[aria-current="page"] {
+            color: var(--text-header);
+            background: var(--accent-glow);
         }
 
         .logo-wrap {
@@ -947,6 +982,12 @@ const navRssHref = isRu ? "/ru/feed.xml" : "/feed.xml";
                 grid-column: 1;
                 grid-row: 1;
             }
+            .header-left {
+                display: contents;
+            }
+            .header-nav {
+                display: none;
+            }
             .logo-wrap {
                 grid-column: 2;
                 grid-row: 1;
@@ -1229,14 +1270,21 @@ const navRssHref = isRu ? "/ru/feed.xml" : "/feed.xml";
     <!-- Compact Media Header -->
     <header class="media-header">
         <div class="container header-container">
-            <button class="burger-toggle btn-social" id="burger-toggle-btn" aria-label={navLabels.openMenu} data-tooltip={navLabels.menuTooltip}>
-                <!-- Hamburger Icon -->
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <line x1="4" x2="20" y1="12" y2="12" />
-                    <line x1="4" x2="20" y1="6" y2="6" />
-                    <line x1="4" x2="20" y1="18" y2="18" />
-                </svg>
-            </button>
+            <div class="header-left">
+                <button class="burger-toggle btn-social" id="burger-toggle-btn" aria-label={navLabels.openMenu} data-tooltip={navLabels.menuTooltip}>
+                    <!-- Hamburger Icon -->
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="4" x2="20" y1="12" y2="12" />
+                        <line x1="4" x2="20" y1="6" y2="6" />
+                        <line x1="4" x2="20" y1="18" y2="18" />
+                    </svg>
+                </button>
+                <nav class="header-nav" aria-label={navLabels.drawerTitle}>
+                    <a href={navHomeHref} aria-current={Astro.url.pathname === (isRu ? "/ru/" : "/") ? "page" : undefined}>{navLabels.home}</a>
+                    <a href={navArchiveHref}>{navLabels.archive}</a>
+                    <a href={navAiModelsHref}>{navLabels.aiModels}</a>
+                </nav>
+            </div>
             
             <a href={isRu ? "/ru/" : "/"} class="logo-wrap">
                 <img src="/brand-avatar-small-20260629.webp" alt={brandDisplayName} class="logo-avatar" width="36" height="36" />

@@ -28,14 +28,12 @@ interface Project {
 }
 
 interface Labels {
-  latestStory: string;
-  primaryLinks: string;
   archive: string;
   search: string;
-  featuredCategory: string;
   languageSwitch: string;
   empty: string;
   latestPosts: string;
+  latestUpdates: string;
   trending: string;
   topics: string;
   projects: string;
@@ -57,17 +55,13 @@ interface Props {
 
 const {
   posts,
-  latestPosts,
   trendingPosts,
-  topicStats,
-  projects,
   labels,
   locale,
-  categoryBasePath
 } = Astro.props;
 
-const leadPost = posts[0] || null;
-const categoryHref = (slug: string) => `${categoryBasePath}${slug}/`;
+const storyPosts = posts.slice(0, 3);
+const updatePosts = posts.slice(3, 8);
 
 function formatMskDate(value: string) {
   if (!value) return "";
@@ -88,77 +82,41 @@ function formatMskDate(value: string) {
 ---
 
 <main class="home-page">
-  {leadPost ? (
-    <section class="news-hero" aria-labelledby="lead-title">
-      <div class="news-hero__header">
-        <p class="news-hero__eyebrow">{labels.latestStory}</p>
-        <nav class="news-hero__links" aria-label={labels.primaryLinks}>
-          <a href={locale === 'ru' ? '/ru/archive/' : '/archive/'}>{labels.archive}</a>
-          <a href={locale === 'ru' ? '/ru/search/' : '/search/'}>{labels.search}</a>
-          <a href={categoryHref(leadPost.categorySlug)}>{leadPost.category}</a>
-          <a href={locale === 'ru' ? '/' : '/ru/'}>{labels.languageSwitch}</a>
-        </nav>
-      </div>
-
-      <a href={leadPost.url} class:list={['lead-card', { 'lead-card--no-image': !leadPost.image }]}>
-        <div class="lead-card__media" aria-hidden="true">
-          {leadPost.image ? (
-            <img
-              src={`/${leadPost.image}`}
-              srcset={leadPost.imageSrcSet}
-              alt=""
-              loading="eager"
-              decoding="async"
-              sizes="(max-width: 860px) 100vw, 40vw"
-            />
-          ) : (
-            <span>{leadPost.category}</span>
-          )}
-        </div>
-        <div class="lead-card__body">
-          <div class="lead-card__meta">
-            <span class="pill">{leadPost.category}</span>
-            <time datetime={leadPost.date}>{leadPost.relativeDate || `${formatMskDate(leadPost.date)} ${labels.mskSuffix}`}</time>
-          </div>
-          <h1 id="lead-title">{leadPost.title}</h1>
-          {leadPost.excerpt && <p>{leadPost.excerpt}</p>}
-        </div>
-      </a>
-    </section>
-  ) : (
-    <p class="empty">{labels.empty}</p>
-  )}
-
-  <div class="content-grid">
-    <section class="section" aria-labelledby="posts-title">
-      <div class="section__header">
-        <h2 class="section__title" id="posts-title">{labels.latestPosts}</h2>
-        <a href={locale === 'ru' ? '/ru/archive/' : '/archive/'} class="section__link">{labels.archive}</a>
-      </div>
-      <div class="post-list">
-        {latestPosts.map((post) => (
-          <a href={post.url} class="post-row">
-            <div class="post-row__thumb" aria-hidden="true">
+  {storyPosts.length ? (
+    <section class="home-stage" aria-label={labels.latestPosts}>
+      <div class="story-grid">
+        {storyPosts.map((post, index) => (
+          <a href={post.url} class={`story-card${post.image ? '' : ' story-card--no-image'}`}>
+            <div class="story-card__media" aria-hidden="true">
               {post.image ? (
-                <img src={`/${post.image}`} srcset={post.imageSrcSet} alt="" loading="lazy" decoding="async" sizes="(max-width: 720px) 120px, 180px" />
+                <img
+                  src={`/${post.image}`}
+                  srcset={post.imageSrcSet}
+                  alt=""
+                  loading={index === 0 ? 'eager' : 'lazy'}
+                  decoding="async"
+                  sizes="(max-width: 820px) min(100vw, 430px), (max-width: 1180px) 42vw, 320px"
+                />
               ) : (
                 <span>{post.category}</span>
               )}
             </div>
-            <div class="post-row__content">
-              <span class="post-row__date">{post.relativeDate || `${formatMskDate(post.date)} ${labels.mskSuffix}`}</span>
-              <strong>{post.title}</strong>
-              {post.excerpt && <span>{post.excerpt}</span>}
+            <div class="story-card__shade"></div>
+            <div class="story-card__content">
+              <div class="story-card__meta">
+                <span class="pill">{post.category}</span>
+                <time datetime={post.date}>{post.relativeDate || `${formatMskDate(post.date)} ${labels.mskSuffix}`}</time>
+              </div>
+              <h1>{post.title}</h1>
+              {post.excerpt && <p>{truncateText(post.excerpt, 112)}</p>}
             </div>
           </a>
         ))}
       </div>
-    </section>
 
-    <aside class="home-sidebar" aria-label={labels.sidebarLabel}>
-      <section class="panel" aria-labelledby="trending-title">
+      <aside class="trending-panel" aria-label={labels.sidebarLabel}>
         <div class="section__header">
-          <h2 class="section__title" id="trending-title">{labels.trending}</h2>
+          <h2 class="section__title">{labels.trending}</h2>
           <a href={locale === 'ru' ? '/ru/search/' : '/search/'} class="section__link">{labels.search}</a>
         </div>
         <div class="compact-list">
@@ -169,335 +127,271 @@ function formatMskDate(value: string) {
             </a>
           ))}
         </div>
-      </section>
+      </aside>
+    </section>
+  ) : (
+    <p class="empty">{labels.empty}</p>
+  )}
 
-      <section class="panel" aria-labelledby="topics-title">
-        <h2 class="section__title" id="topics-title">{labels.topics}</h2>
-        <div class="topic-grid">
-          {topicStats.map((topic) => (
-            <a href={categoryHref(topic.slug)} class="topic-pill">
-              <span>{topic.label}</span>
-              <small>{topic.count}</small>
-            </a>
-          ))}
-        </div>
-      </section>
-
-      <section class="panel" aria-labelledby="projects-title">
-        <div class="section__header">
-          <h2 class="section__title" id="projects-title">{labels.projects}</h2>
-          <a href="/projects/" class="section__link">{labels.all}</a>
-        </div>
-        <div class="project-list">
-          {projects.slice(0, 3).map((project) => (
-            <a href={project.url} class="project-row" target="_blank" rel="noopener noreferrer">
-              <span>{project.kind}</span>
-              <strong>{project.name}</strong>
-            </a>
-          ))}
-        </div>
-      </section>
-    </aside>
-  </div>
+  {updatePosts.length > 0 && (
+    <section class="updates-strip" aria-labelledby="updates-title">
+      <div class="section__header">
+        <h2 class="section__title" id="updates-title">{labels.latestUpdates}</h2>
+        <a href={locale === 'ru' ? '/ru/archive/' : '/archive/'} class="section__link">{labels.archive}</a>
+      </div>
+      <div class="update-list">
+        {updatePosts.map((post) => (
+          <a href={post.url} class="update-row">
+            <span>{post.category}</span>
+            <strong>{truncateText(post.title, 74)}</strong>
+            <time datetime={post.date}>{post.relativeDate || `${formatMskDate(post.date)} ${labels.mskSuffix}`}</time>
+          </a>
+        ))}
+      </div>
+    </section>
+  )}
 </main>
 
 <style>
   .home-page {
-    max-width: 1120px;
-    margin: 0 auto;
-    padding: 1.25rem 0 3rem;
+    width: min(1528px, calc(100vw - 4rem));
+    max-width: none;
+    margin-left: 50%;
+    transform: translateX(-50%);
+    padding: 0.65rem 0 3rem;
     min-width: 0;
   }
 
-  .news-hero {
-    min-width: 0;
+  .home-stage {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(300px, 380px);
+    gap: 1rem;
+    align-items: start;
   }
 
-  .news-hero__header {
+  .story-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 1rem;
+  }
+
+  .story-card {
+    position: relative;
+    aspect-ratio: 9 / 16;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--card-bg);
+    color: var(--text-header);
+    min-width: 0;
+    overflow: hidden;
+    isolation: isolate;
+  }
+
+  .story-card:hover {
+    border-color: var(--border-hover);
+  }
+
+  .story-card__media,
+  .story-card__shade {
+    position: absolute;
+    inset: 0;
+  }
+
+  .story-card__media {
+    background:
+      radial-gradient(circle at 35% 18%, rgba(240, 68, 101, 0.16), transparent 34%),
+      linear-gradient(135deg, rgba(240, 68, 101, 0.1), rgba(255, 255, 255, 0.03));
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    flex-wrap: wrap;
-    gap: 1rem;
-    margin-bottom: 0.9rem;
+    justify-content: center;
+    color: var(--text-muted);
+    font-family: var(--font-mono);
+    font-size: 0.86rem;
+    font-weight: 800;
+    text-align: center;
   }
 
-  .news-hero__eyebrow {
+  .story-card__media img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    transform: scale(1.01);
+  }
+
+  .story-card__shade {
+    z-index: 1;
+    background:
+      linear-gradient(180deg, rgba(8, 11, 16, 0.04) 0%, rgba(8, 11, 16, 0.1) 43%, rgba(8, 11, 16, 0.82) 78%, rgba(8, 11, 16, 0.96) 100%);
+  }
+
+  .story-card__content {
+    position: absolute;
+    z-index: 2;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.55rem;
+    padding: clamp(1rem, 1.9vw, 1.35rem);
+  }
+
+  .story-card__meta {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.55rem;
+  }
+
+  .story-card__meta time {
+    color: rgba(243, 246, 250, 0.74);
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+  }
+
+  .story-card h1 {
     margin: 0;
+    font-size: clamp(1.25rem, 2vw, 1.72rem);
+    line-height: 1.04;
+    letter-spacing: 0;
+    overflow-wrap: anywhere;
+    display: -webkit-box;
+    -webkit-line-clamp: 4;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .story-card p {
+    margin: 0;
+    color: rgba(243, 246, 250, 0.78);
+    font-size: 0.86rem;
+    line-height: 1.4;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .pill {
+    width: fit-content;
+    padding: 0.2rem 0.5rem;
+    border: 1px solid rgba(240, 68, 101, 0.36);
+    border-radius: 6px;
+    background: rgba(8, 11, 16, 0.55);
     color: var(--accent);
     font-family: var(--font-mono);
-    font-size: 0.82rem;
+    font-size: 0.72rem;
     font-weight: 800;
   }
 
-  .news-hero__links,
+  .trending-panel,
+  .updates-strip {
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--card-bg);
+    min-width: 0;
+  }
+
+  .trending-panel {
+    min-height: 100%;
+    padding: 1.1rem;
+  }
+
   .section__header {
     display: flex;
     align-items: center;
-    flex-wrap: wrap;
+    justify-content: space-between;
     gap: 0.75rem;
+    margin-bottom: 0.9rem;
   }
 
-  .news-hero__links a,
+  .section__title {
+    margin: 0;
+    font-size: 1.2rem;
+  }
+
   .section__link {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    min-height: 38px;
-    padding: 0.45rem 0.8rem;
+    min-height: 34px;
+    padding: 0.38rem 0.65rem;
     border: 1px solid var(--border);
     border-radius: 8px;
-    background: var(--card-bg);
+    background: rgba(255, 255, 255, 0.02);
     color: var(--text-main);
-    font-weight: 700;
+    font-size: 0.86rem;
+    font-weight: 800;
   }
 
-  .news-hero__links a:hover,
   .section__link:hover {
     color: var(--text-header);
     border-color: var(--border-hover);
     background: var(--accent-glow);
   }
 
-  .section {
-    margin-top: 1.4rem;
-  }
-
-  .lead-card {
+  .compact-list {
     display: grid;
-    grid-template-columns: minmax(280px, 0.68fr) minmax(0, 1fr);
-    min-height: 320px;
-    padding: 0;
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    background: var(--card-bg);
-    color: var(--text-main);
-    overflow: hidden;
   }
 
-  .lead-card__media {
-    min-height: 100%;
-    aspect-ratio: 1 / 1;
-    overflow: hidden;
-    background: linear-gradient(135deg, rgba(240, 68, 101, 0.12), rgba(255, 255, 255, 0.03));
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: var(--text-muted);
-    font-family: var(--font-mono);
-    font-size: 0.9rem;
-    font-weight: 800;
-    text-align: center;
-  }
-
-  .lead-card--no-image .lead-card__media {
-    min-height: 100%;
-  }
-
-  .lead-card__media img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    display: block;
-  }
-
-  .lead-card__body {
-    min-width: 0;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    gap: 1rem;
-    padding: clamp(1.25rem, 3vw, 2.5rem);
-  }
-
-  .lead-card__meta {
-    display: flex;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: 0.75rem;
-  }
-
-  .lead-card__meta time {
-    color: var(--text-muted);
-    font-family: var(--font-mono);
-    font-size: 0.85rem;
-  }
-
-  .lead-card h1 {
-    margin: 0;
-    font-size: clamp(2rem, 4vw, 3.65rem);
-    line-height: 1.02;
-    letter-spacing: 0;
-    overflow-wrap: anywhere;
-  }
-
-  .lead-card p {
-    margin: 0;
-    color: var(--text-secondary);
-    font-size: 1.02rem;
-  }
-
-  .pill {
-    width: fit-content;
-    padding: 0.2rem 0.5rem;
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    color: var(--accent);
-    font-family: var(--font-mono);
-    font-size: 0.78rem;
-    font-weight: 800;
-  }
-
-  .content-grid {
-    display: grid;
-    grid-template-columns: minmax(0, 1.75fr) minmax(280px, 0.8fr);
-    gap: 1.3rem;
-    align-items: start;
-    margin-top: 1.4rem;
-  }
-
-  .content-grid .section {
-    margin-top: 0;
-  }
-
-  .home-sidebar {
-    display: grid;
-    gap: 0.9rem;
-  }
-
-  .panel {
-    padding: 1rem;
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    background: var(--card-bg);
-    min-width: 0;
-  }
-
-  .section__header {
-    justify-content: space-between;
-    margin-bottom: 0.85rem;
-  }
-
-  .section__title {
-    margin: 0;
-    font-size: 1.15rem;
-  }
-
-  .post-list,
-  .compact-list,
-  .project-list {
-    display: grid;
-    gap: 0.75rem;
-  }
-
-  .post-row {
-    display: grid;
-    grid-template-columns: clamp(150px, 18vw, 210px) minmax(0, 1fr);
-    gap: 0;
-    padding: 0;
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    background: var(--card-bg);
-    min-width: 0;
-    min-height: 150px;
-    overflow: hidden;
-  }
-
-  .post-row__thumb {
-    width: 100%;
-    min-height: 100%;
-    border-right: 1px solid var(--border);
-    overflow: hidden;
-    background: linear-gradient(135deg, rgba(240, 68, 101, 0.12), rgba(255, 255, 255, 0.03));
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: var(--text-muted);
-    font-family: var(--font-mono);
-    font-size: 0.92rem;
-    font-weight: 800;
-    text-align: center;
-  }
-
-  .post-row__thumb img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    display: block;
-  }
-
-  .post-row__content {
-    min-width: 0;
-    display: grid;
-    gap: 0.35rem;
-    align-content: center;
-    padding: 1rem 1.2rem;
-  }
-
-  .post-row__content strong {
-    font-size: 1.1rem;
-    line-height: 1.25;
-  }
-
-  .post-row span,
-  .compact-row span,
-  .project-row span {
-    color: var(--text-secondary);
-  }
-
-  .post-row__date {
-    font-size: 0.82rem;
-  }
-
-  .compact-row,
-  .project-row {
+  .compact-row {
     display: grid;
     gap: 0.2rem;
-    padding: 0.75rem 0;
+    padding: 0.82rem 0;
     border-bottom: 1px solid var(--border);
     color: var(--text-main);
     min-width: 0;
   }
 
-  .compact-row:last-child,
-  .project-row:last-child {
+  .compact-row:last-child {
     border-bottom: 0;
   }
 
-  .compact-row strong,
-  .project-row strong {
+  .compact-row strong {
     color: var(--text-header);
     font-size: 0.92rem;
     line-height: 1.35;
     overflow-wrap: anywhere;
   }
 
-  .compact-row span,
-  .project-row span {
+  .compact-row span {
+    color: var(--text-secondary);
     font-family: var(--font-mono);
     font-size: 0.74rem;
   }
 
-  .topic-grid {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.5rem;
-    margin-top: 0.9rem;
+  .updates-strip {
+    margin-top: 1rem;
+    padding: 1rem;
   }
 
-  .topic-pill {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.45rem;
-    padding: 0.4rem 0.55rem;
-    border: 1px solid var(--border);
-    border-radius: 6px;
+  .update-list {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 0.8rem;
+  }
+
+  .update-row {
+    display: grid;
+    gap: 0.25rem;
+    min-width: 0;
+    padding: 0.2rem 0.25rem;
     color: var(--text-main);
-    font-size: 0.84rem;
   }
 
-  .topic-pill small {
-    color: var(--text-muted);
+  .update-row span,
+  .update-row time {
+    color: var(--text-secondary);
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+  }
+
+  .update-row strong {
+    color: var(--text-header);
+    font-size: 0.9rem;
+    line-height: 1.25;
+    overflow-wrap: anywhere;
   }
 
   .empty {
@@ -505,70 +399,52 @@ function formatMskDate(value: string) {
     color: var(--text-secondary);
   }
 
-  @media (max-width: 860px) {
-    .lead-card {
+  @media (max-width: 1180px) {
+    .home-stage {
       grid-template-columns: 1fr;
-      min-height: 0;
     }
 
-    .lead-card__media {
-      min-height: 220px;
-      aspect-ratio: 16 / 9;
-    }
-
-    .lead-card--no-image .lead-card__media {
-      min-height: 120px;
-      aspect-ratio: auto;
-    }
-  }
-
-  @media (max-width: 720px) {
-    .home-page {
-      padding-top: 0.75rem;
-    }
-
-    .news-hero__header {
-      align-items: flex-start;
-      flex-direction: column;
-    }
-
-    .news-hero__links {
-      width: 100%;
-      display: grid;
+    .story-grid {
       grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 
-    .lead-card h1 {
-      font-size: clamp(1.75rem, 9vw, 2.55rem);
+    .trending-panel {
+      min-height: 0;
+    }
+  }
+
+  @media (max-width: 820px) {
+    .story-grid {
+      grid-template-columns: 1fr;
+      justify-items: center;
     }
 
-    .content-grid {
+    .story-card {
+      width: min(100%, 430px);
+    }
+
+    .update-list {
       grid-template-columns: 1fr;
     }
+  }
 
-    .post-row {
-      grid-template-columns: 116px minmax(0, 1fr);
-      min-height: 128px;
+  @media (max-width: 520px) {
+    .home-page {
+      width: min(100%, calc(100vw - 1.5rem));
+      padding-top: 0.25rem;
     }
 
-    .post-row__thumb {
-      border-right: 1px solid var(--border);
-      font-size: 0.72rem;
+    .story-card__content {
+      padding: 1rem;
     }
 
-    .post-row__content {
-      padding: 0.85rem;
+    .story-card h1 {
+      font-size: clamp(1.45rem, 7vw, 1.9rem);
     }
 
-    .post-row__content strong {
-      font-size: 1rem;
-    }
-
-    .post-row__content > span:not(.post-row__date) {
-      display: -webkit-box;
-      -webkit-line-clamp: 2;
-      -webkit-box-orient: vertical;
-      overflow: hidden;
+    .trending-panel,
+    .updates-strip {
+      padding: 0.9rem;
     }
   }
 </style>
