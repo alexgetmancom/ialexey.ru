@@ -8,8 +8,8 @@
     "accent": "Python / SQLite"
   },
   {
-    "name": "ialexey.ru",
-    "url": "https://github.com/alexgetmancom/ialexey.ru",
+    "name": "alexgetman.com",
+    "url": "https://github.com/alexgetmancom/alexgetman.com",
     "kind": "Website",
     "status": "active",
     "description": "Исходный код персонального сайта и экосистемы alexgetmancom на Astro.",

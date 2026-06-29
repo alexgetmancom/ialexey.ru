@@ -63,7 +63,7 @@ export async function GET(context) {
   const lines = [
     "# Alex Getman",
     "",
-    "> English hub for AI news, automation, developer tools, self-hosted systems, public projects and translated Telegram posts.",
+    "> English hub for AI news, automation, developer tools, self-hosted systems and public projects.",
     "",
     "## About",
     "Alex Getman publishes short practical updates about AI products, automation workflows, developer tools and self-hosted infrastructure.",
@@ -72,7 +72,7 @@ export async function GET(context) {
     `- Website: ${siteUrl}/`,
     `- Russian section: ${siteUrl}/ru/`,
     "- Telegram: https://t.me/alexgetmancom",
-    "- Threads: https://www.threads.com/@alexgetmancom",
+    "- Threads: https://www.threads.net/@alexgetmanco",
     "- GitHub: https://github.com/alexgetmancom",
     "- LinkedIn: https://www.linkedin.com/in/alexgetmancom",
     `- RSS: ${siteUrl}/feed.xml`,
@@ -88,7 +88,7 @@ export async function GET(context) {
   } else {
     for (const item of sortedItems.slice(0, 10)) {
       const id = item.post_id;
-      const title = truncateText(item.text_en || item.text || "", 86) || `Telegram post ${id}`;
+      const title = truncateText(item.text_en || item.text || "", 86) || `Post ${id}`;
       const date = formatDate(item.date);
       if (!item.has_en || !id) continue;
       lines.push(`### [${title}](${siteUrl}/${id}/${item.slug_en}/)`);

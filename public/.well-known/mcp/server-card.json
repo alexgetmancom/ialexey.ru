@@ -3,10 +3,10 @@
   "version": "1.0",
   "protocolVersion": "2025-06-18",
   "serverInfo": {
-    "name": "ialexey-feed-mcp",
+    "name": "alexgetman-feed-mcp",
     "version": "1.0.0"
   },
-  "description": "MCP server exposing Telegram feed items and analytics for ialexey.ru",
+  "description": "MCP server exposing alexgetman.com feed items and analytics.",
   "transport": {
     "type": "streamable-http",
     "endpoint": "/feed.json"

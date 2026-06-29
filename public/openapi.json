@@ -2,7 +2,7 @@
   "openapi": "3.0.3",
   "info": {
     "title": "alexgetman.com API",
-    "description": "API endpoints for alexgetman.com including Telegram feed feed and simple pageview tracking.",
+    "description": "API endpoints for alexgetman.com including JSON/RSS feeds and simple pageview tracking.",
     "version": "1.0.0"
   },
   "servers": [
@@ -14,7 +14,7 @@
     "/feed.json": {
       "get": {
         "summary": "Get JSON Feed",
-        "description": "Retrieves the recent Telegram feed posts in standard JSON feed format.",
+        "description": "Retrieves recent site posts in standard JSON feed format.",
         "responses": {
           "200": {
             "description": "Successful response",
@@ -59,7 +59,7 @@
     "/feed.xml": {
       "get": {
         "summary": "Get RSS Feed",
-        "description": "Retrieves the recent Telegram feed posts in RSS XML format.",
+        "description": "Retrieves recent site posts in RSS XML format.",
         "responses": {
           "200": {
             "description": "Successful response",

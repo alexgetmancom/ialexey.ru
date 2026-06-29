@@ -1,67 +1,39 @@
 # alexgetman.com
 
-Статический лендинг для [alexgetman.com](https://alexgetman.com).
+Astro site for [alexgetman.com](https://alexgetman.com): EN/RU posts, public pages, RSS/JSON feeds, agent metadata and static assets.
 
-## Состав репозитория
-
-- `index.html` — основная страница (шаблон для ленты).
-- `avatar.png`, `bot-screenshot.jpg` — медиа-файлы и ассеты.
-- `feed/` — скрипт-интеграция с Telegram:
-  - `collector.py` — Python-скрипт, собирающий посты из Telegram по вебхукам, генерирующий статические страницы постов в `/posts/`, RSS/JSON-ленты и встраивающий ленту в `index.html`.
-  - `ialexey-feed.env.example` — шаблон конфигурационного файла с переменными окружения.
-  - `feed.service` — шаблон конфигурации системного сервиса `systemd` (`ialexey-feed.service`).
-- `bin/` — скрипты развертывания:
-  - `ialexey-web-sync.sh` — скрипт синхронизации, запускаемый на сервере каждую минуту через cron. Скачивает обновления с GitHub, синхронизирует публичную папку и запускает пересборку ленты.
-
-## Локальный запуск
+## Local Development
 
 ```bash
-python3 -m http.server 8080
+npm install
+npm run dev
 ```
 
-После этого открыть `http://127.0.0.1:8080`.
+Open `http://127.0.0.1:4321`.
 
-## Деплой и автосинк
-
-Сайт обновляется полностью автоматически при отправке изменений в GitHub.
-
-Текущая схема деплоя:
-
-1. Локальная папка `/Users/alex/projects/ialexey.ru` — основная рабочая копия.
-2. Изменения коммитятся и пушатся в ветку `main` репозитория `iAlexeyRu/ialexey.ru`.
-3. Сервер хранит Git-репозиторий в `/home/deploy/repos/ialexey-web`.
-4. Публичная папка сайта на сервере — `/home/deploy/ialexey-web`.
-5. Cron на сервере раз в минуту запускает скрипт развертывания `/home/deploy/bin/ialexey-web-sync.sh` (который является символической ссылкой на файл из репозитория).
-   Скрипт делает `git pull`, синхронизирует файлы в публичную директорию сайта, а затем запускает рендеринг актуальной Telegram-ленты с помощью `feed/collector.py render`.
-6. Фоновая служба `systemd` (`ialexey-feed.service`) также работает напрямую на базе кода из репозитория (`/home/deploy/ialexey-web/feed/collector.py serve`) и ловит вебхуки от Telegram для моментального обновления ленты при выходе новых постов.
-
-Практический цикл работы:
+## Build
 
 ```bash
-git add .
-git commit -m "обновление стилей или структуры"
-git push
+npm run build
 ```
 
-После `git push` сервер автоматически применит все изменения (включая код Python-коллектора или скрипта деплоя) в течение одной минуты.
+The build generates responsive images first and then runs `astro build`.
 
-## Nginx cache headers
+## Content
 
-Для PageSpeed важно, чтобы fingerprinted ассеты и изображения отдавались с явным TTL. В server block `alexgetman.com` нужно подключить:
+Runtime post data is read from `DATA_DIR/feed.json` in production and falls back to `src/data/feed.json` locally.
 
-```nginx
-include /home/deploy/repos/ialexey-web/deploy/nginx/ialexey-cache.conf;
-```
+Public routes include:
 
-После изменения nginx-конфига:
+- `/` — English home and feed.
+- `/ru/` — Russian home and feed.
+- `/{post_id}/{english-slug}/` — English posts.
+- `/ru/{post_id}/{russian-slug}/` — Russian posts.
+- `/feed.xml`, `/feed.json`, `/ru/feed.xml`, `/ru/feed.json` — feeds.
+- `/about`, `/ru/about`, `/privacy`, `/ru/privacy` — static SEO and policy pages.
 
-```bash
-sudo nginx -t
-sudo systemctl reload nginx
-```
+## Deployment Notes
 
-Полный пример server block для нового домена лежит в `deploy/nginx/alexgetman.com.conf.example`.
-Заметки по Cloudflare DNS и ограничению с оранжевым облаком по странам лежат в `docs/alexgetman-cloudflare.md`.
+Production deployment still uses existing server paths and service names. Treat those as operational internals until the server migration plan explicitly renames them.
 
-## Что удалено из старого снимка сервера
-Вся логика локального сервера-заглушки перенесена в удобную структуру репозитория. Динамические файлы данных (`feed/data/`), логи и файл секретов (`feed/ialexey-feed.env`) добавлены в `.gitignore`, чтобы не скомпрометировать конфиденциальные токены в публичном репозитории.
+Nginx cache rules live in `deploy/nginx/`. Cloudflare notes live in `docs/alexgetman-cloudflare.md`.

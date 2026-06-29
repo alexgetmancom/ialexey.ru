@@ -82,7 +82,7 @@ function telegramToSearchItem(item) {
       ? `/${postId}/${item.slug_en}/`
       : `/ru/${postId}/${item.slug_ru}/`,
     date: item.date,
-    source: 'Telegram',
+    source: 'alexgetman.com',
     category: getSmartBadge(item.text || text),
     image: item.image ? `/${item.image}` : null
   };

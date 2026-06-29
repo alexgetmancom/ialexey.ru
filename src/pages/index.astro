@@ -37,14 +37,14 @@ const latestEnglishPosts = feedItems
     return {
       id,
       url: `/${id}/${item.slug_en}/`,
-      title: getFirstSentence(text) || `Telegram post ${id}`,
+      title: getFirstSentence(text) || `Post ${id}`,
       excerpt: truncateText(text, 180),
       date: item.date
     };
   });
 
 const title = "Alex Getman | AI, automation and self-hosted systems";
-const description = "English hub for Alex Getman: AI news, automation, developer tools, self-hosted systems, public projects and translated Telegram posts.";
+const description = "English hub for Alex Getman: AI news, automation, developer tools, self-hosted systems and public projects.";
 
 const schema = JSON.stringify({
   "@context": "https://schema.org",
@@ -58,7 +58,7 @@ const schema = JSON.stringify({
       "image": "https://alexgetman.com/avatar.png",
       "sameAs": [
         "https://t.me/alexgetmancom",
-        "https://www.threads.com/@alexgetmancom",
+        "https://www.threads.net/@alexgetmanco",
         "https://www.youtube.com/@alexgetmancom",
         "https://www.twitch.tv/alexgetmancom",
         "https://github.com/alexgetmancom",

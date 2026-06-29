@@ -78,7 +78,7 @@ export async function GET(context) {
     "## Social profiles",
     "",
     "- Telegram: https://t.me/alexgetmancom",
-    "- Threads: https://www.threads.com/@alexgetmancom",
+    "- Threads: https://www.threads.net/@alexgetmanco",
     "- GitHub: https://github.com/alexgetmancom",
     "- LinkedIn: https://www.linkedin.com/in/alexgetmancom",
     "- YouTube: https://www.youtube.com/@alexgetmancom",
@@ -92,7 +92,7 @@ export async function GET(context) {
   } else {
     for (const item of sortedItems.slice(0, 30)) {
       const id = item.post_id;
-      const title = truncateText(item.text_en || item.text || "", 86) || `Telegram post ${id}`;
+      const title = truncateText(item.text_en || item.text || "", 86) || `Post ${id}`;
       const date = formatDate(item.date);
       if (!item.has_en || !id) continue;
       lines.push(`- [${title}](${siteUrl}/${id}/${item.slug_en}/) - ${date} MSK`);

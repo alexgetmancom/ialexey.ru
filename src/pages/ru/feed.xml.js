@@ -40,8 +40,6 @@ export async function GET(context) {
     .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
     .slice(0, 50);
 
-  const channelUsername = "alexgetmancom";
-  
   // Title truncation helper
   function cleanText(text) {
     return (text || "").replace(/\n{3,}/g, "\n\n").trim();
@@ -59,17 +57,16 @@ export async function GET(context) {
 
   return rss({
     title: 'RU — Алексей Гетманец | alexgetmancom',
-    description: 'Сливы и новости ИИ от Алексея Гетманца: короткая Telegram-лента, RSS и статические страницы постов.',
+    description: 'Новости ИИ, автоматизация, разработка и self-hosted системы от Алексея Гетманца.',
     site: context.site || 'https://alexgetman.com',
     items: sortedItems.map((item) => {
       const id = item.post_id;
-      const title = truncateText(item.text || "", 86) || `Пост Telegram ${id}`;
+      const title = truncateText(item.text || "", 86) || `Пост ${id}`;
       return {
         title: title,
         pubDate: new Date(item.date),
         description: item.html || item.text,
-        link: `/ru/${id}/${item.slug_ru}/`,
-        customData: item.url ? `<source url="${item.url}">${channelUsername}</source>` : undefined
+        link: `/ru/${id}/${item.slug_ru}/`
       };
     }),
     customData: `<language>ru</language>`,

@@ -3,9 +3,9 @@
   "skills": [
     {
       "name": "read-feed",
-      "description": "Read the latest neural network and AI leaks and news posts from Алексей Гетманец's Telegram feed.",
+      "description": "Read the latest AI news, automation notes and developer posts from alexgetman.com.",
       "url": "/.well-known/agent-skills/read-feed/SKILL.md",
-      "digest": "sha256:3b38642141b16daaaeb622a82d86cb303c2f03dd183e2beaa14773a4bd3a46b7"
+      "digest": "sha256:ca313bab86f5b66a3c60928b7f2fb78500d10e8fdd8f835e2ebc5b5938933790"
     }
   ]
 }

@@ -47,18 +47,17 @@ export async function GET(context) {
 
   return rss({
     title: 'Alex Getman | AI, automation and self-hosted systems',
-    description: 'English updates from Alex Getman: AI news, automation, developer tools, self-hosted systems and translated Telegram posts.',
+    description: 'English updates from Alex Getman: AI news, automation, developer tools and self-hosted systems.',
     site: context.site || 'https://alexgetman.com',
     items: sortedItems.map((item) => {
       const id = item.post_id;
       const text = item.text_en || item.text || "";
-      const title = truncateText(text, 86) || `Telegram post ${id}`;
+      const title = truncateText(text, 86) || `Post ${id}`;
       return {
         title,
         pubDate: new Date(item.date),
         description: item.html_en || item.text_en,
-        link: `/${id}/${item.slug_en}/`,
-        customData: item.url ? `<source url="${item.url}">alexgetmancom</source>` : undefined
+        link: `/${id}/${item.slug_en}/`
       };
     }),
     customData: `<language>en</language>`,

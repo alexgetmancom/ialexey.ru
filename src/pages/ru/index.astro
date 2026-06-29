@@ -21,7 +21,7 @@ import {
 const channelUsername = "alexgetmancom";
 const siteAuthor = "Алексей Гетманец";
 const siteTitle = "Алексей Гетманец | alexgetmancom";
-const siteDescription = "Личный hub alexgetmancom: AI, development, automation, self-hosted проекты, Telegram-лента, open-source и комьюнити.";
+const siteDescription = "Личный hub alexgetmancom: AI, development, automation, self-hosted проекты, open-source и комьюнити.";
 const publicTelegramChannel = "alexgetmancom";
 
 // Load feed items
@@ -74,7 +74,7 @@ const schemaObject = {
       "image": "https://alexgetman.com/avatar.png",
       "sameAs": [
         `https://t.me/${publicTelegramChannel}`,
-        "https://www.threads.com/@alexgetmancom",
+        "https://www.threads.net/@alexgetmanru",
         "https://www.youtube.com/@alexgetmancom",
         "https://www.twitch.tv/alexgetmancom",
         "https://github.com/alexgetmancom",
@@ -110,7 +110,7 @@ const schemaObject = {
           "name": "Откуда берутся сливы и новости ИИ?",
           "acceptedAnswer": {
             "@type": "Answer",
-            "text": "Информация собирается из открытых источников, закрытых бета-веток продуктов, каналов разработчиков и сообществ в Telegram."
+            "text": "Информация собирается из открытых источников, закрытых бета-веток продуктов, каналов разработчиков и публичных обсуждений."
           }
         },
         {
@@ -125,8 +125,8 @@ const schemaObject = {
     },
     ...(sortedItems.length > 0 ? [{
       "@type": "ItemList",
-      "@id": "https://alexgetman.com/#telegram-feed",
-      "name": "Последние посты Telegram",
+      "@id": "https://alexgetman.com/#latest-posts",
+      "name": "Последние публикации",
       "itemListElement": sortedItems.map((item, idx) => {
         const textContent = (item.text || "").trim();
         const titleRaw = item.title ? item.title : getFirstSentence(textContent);
@@ -143,7 +143,7 @@ const schemaObject = {
 
 const schema = JSON.stringify(schemaObject);
 
-// 1. "Главные новости" (Top 5 ranked by Telegram views)
+// 1. "Главные новости" (Top 5 ranked by views)
 const candidatesWithViews = sortedItems.map(item => {
   const views = item.views || 0;
   return { ...item, views };
@@ -168,11 +168,11 @@ function cleanArticleTitle(title: string) {
 }
 
 const featuredCriterionText = mainFeaturedItems.some(item => item.views > 0)
-  ? "по просмотрам Telegram за последние 7 дней"
+  ? "по просмотрам за последние 7 дней"
   : "последние новости";
 
 const platformLinks = [
-  { title: "Threads", label: "@alexgetmancom", url: "https://www.threads.com/@alexgetmancom", desc: "короткие посты и быстрые обновления" },
+  { title: "Threads", label: "@alexgetmanru", url: "https://www.threads.net/@alexgetmanru", desc: "короткие посты и быстрые обновления" },
   { title: "YouTube", label: "@alexgetmancom", url: "https://www.youtube.com/@alexgetmancom", desc: "видео, Shorts и разборы" },
   { title: "Instagram", label: "@alexgetmancom", url: "https://www.instagram.com/alexgetmancom/", desc: "Reels и визуальные обновления" },
   { title: "Twitch", label: "alexgetmancom", url: "https://www.twitch.tv/alexgetmancom", desc: "стримы и live-форматы" },
@@ -249,7 +249,7 @@ const getRuPostPath = (item) => getPostPath(item, 'ru');
                                       <span class="featured-item-time">{timeStr}</span>
                                       <span class="featured-item-text">{title}</span>
                                       {item.views > 0 && (
-                                          <span class="featured-item-views" title="Просмотры в Telegram">
+                                          <span class="featured-item-views" title="Просмотры">
                                               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="views-icon"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
                                               {formatViewsCount(item.views)}
                                           </span>

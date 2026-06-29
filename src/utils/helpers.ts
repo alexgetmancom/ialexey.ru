@@ -1,4 +1,4 @@
-// Shared helper functions for ialexey.ru Astro website
+// Shared helper functions for alexgetman.com Astro website
 import sanitizeHtmlLibrary from 'sanitize-html';
 
 export function cleanText(text: string): string {

@@ -10,17 +10,19 @@ interface Props {
   siteName?: string;
   rssHref?: string;
   alternateLinks?: Array<{ hreflang: string; href: string }>;
+  robots?: string;
 }
 
 const {
   title = "Алексей Гетманец | Сливы и новости ИИ",
-  description = "Сливы и новости ИИ от Алексея Гетманца: короткая Telegram-лента, RSS и статические страницы постов.",
+  description = "Алексей Гетманец пишет об AI, разработке, автоматизации, self-hosted системах и инструментах для разработчиков.",
   schema,
   canonicalUrl = Astro.url.href,
   lang = "ru",
   siteName = "Алексей Гетманец",
   rssHref = "/feed.xml",
-  alternateLinks = []
+  alternateLinks = [],
+  robots = "index, follow"
 } = Astro.props;
 
 const cleanDescription = removeLeadingEmoji(description);
@@ -35,9 +37,11 @@ const socialImage = `${publicBaseUrl}/social-image.jpg`;
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{title}</title>
     <meta name="description" content={cleanDescription}>
-    <meta name="robots" content="index, follow">
+    <meta name="robots" content={robots}>
+    <meta name="theme-color" content="#080B10">
     <link rel="icon" type="image/svg+xml" href="/favicon.svg">
     <link rel="alternate icon" type="image/x-icon" href="/favicon.ico">
+    <link rel="manifest" href="/manifest.json">
     <link rel="canonical" href={canonicalUrl}>
     <link rel="alternate" type="application/rss+xml" title={title} href={rssHref}>
     {alternateLinks.map((link) => (
@@ -1088,7 +1092,7 @@ const socialImage = `${publicBaseUrl}/social-image.jpg`;
                     tools: [
                       {
                         name: 'read_feed',
-                        description: 'Get the latest AI news and leaks from the Telegram feed of Алексей Гетманец.',
+                        description: 'Get the latest AI news, automation notes and developer updates from alexgetman.com.',
                         inputSchema: {
                           type: 'object',
                           properties: {
@@ -1117,7 +1121,7 @@ const socialImage = `${publicBaseUrl}/social-image.jpg`;
                 } else if (navigator.modelContext.registerTool) {
                   await navigator.modelContext.registerTool({
                     name: 'read_feed',
-                    description: 'Get the latest AI news and leaks from the Telegram feed of Алексей Гетманец.',
+                    description: 'Get the latest AI news, automation notes and developer updates from alexgetman.com.',
                     inputSchema: {
                       type: 'object',
                       properties: {

@@ -1,0 +1,22 @@
+{
+  "name": "Alex Getman",
+  "short_name": "Alex Getman",
+  "description": "AI news, automation notes, developer tools and self-hosted systems by Alex Getman.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#080B10",
+  "theme_color": "#080B10",
+  "icons": [
+    {
+      "src": "/avatar-small.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/avatar.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

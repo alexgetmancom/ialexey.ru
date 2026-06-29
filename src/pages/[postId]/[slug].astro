@@ -200,7 +200,7 @@ function splitPostContent(text: string, html: string) {
 const { title: postTitle, titleHtml: postTitleHtml, bodyHtml: postBodyHtml } = splitPostContent(item.text || "", item.html || "");
 
 const pageMetaTitle = postTitle || `Post ${postId}`;
-const postDescription = truncateText(postBodyHtml.replace(/<[^>]+>/g, '') || item.text || "", 220) || "AI leaks and news from Alexey Getmanets: short Telegram feed, RSS, and static post pages.";
+const postDescription = truncateText(postBodyHtml.replace(/<[^>]+>/g, '') || item.text || "", 158) || "AI news, automation notes and developer updates by Alex Getman on alexgetman.com.";
 
 const localUrl = `https://alexgetman.com/${postId}/${slug}/`;
 const telegramUrl = item.url || null;
@@ -214,6 +214,9 @@ const postMedia = Array.isArray(item.media_en) && item.media_en.length > 0
   : (Array.isArray(item.media) && item.media.length > 0
     ? item.media
     : (item.image_en ? [{ type: "image", path: item.image_en }] : (item.image ? [{ type: "image", path: item.image }] : [])));
+const schemaImages = postMedia
+  .filter((mediaItem: any) => mediaItem.type !== "video" && mediaItem.path)
+  .map((mediaItem: any) => `https://alexgetman.com/${String(mediaItem.path).replace(/^\/+/, '')}`);
 
 // Schema.org Article dynamic markup
 const schemaObject = {
@@ -236,7 +239,7 @@ const schemaObject = {
     "url": "https://alexgetman.com/"
   },
   "mainEntityOfPage": localUrl,
-  ...(telegramUrl ? { "isBasedOn": telegramUrl } : {})
+  ...(schemaImages.length ? { "image": schemaImages } : {})
 };
 
 const schema = JSON.stringify(schemaObject);
@@ -267,7 +270,7 @@ const schema = JSON.stringify(schemaObject);
           <div class="meta-row">
               <span class={`badge ${badge.class}`}>{badge.label}</span>
               <div class="meta-right">
-                  {telegramUrl && <><a href={telegramUrl} target="_blank" rel="noopener" class="tg-source">Telegram / @{channelUsername}</a><span class="meta-dot">•</span></>}
+                  {telegramUrl && <><a href={telegramUrl} target="_blank" rel="noopener" class="tg-source">Discussion / @{channelUsername}</a><span class="meta-dot">•</span></>}
                   <time datetime={item.date}>{formattedDate} MSK</time>
               </div>
           </div>
@@ -299,8 +302,8 @@ const schema = JSON.stringify(schemaObject);
           
           <div class="article-body" set:html={sanitizeHtml(postBodyHtml || item.html || item.text)}></div>
 
-          {telegramUrl && <a href={telegramUrl} target="_blank" rel="noopener noreferrer" class="original-link">
-              <span>Open original in Telegram</span>
+          {telegramUrl && <a href={telegramUrl} target="_blank" rel="noopener noreferrer" class="discussion-link">
+              <span>Discuss in Telegram</span>
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17 17 7"/><path d="M7 7h10v10"/></svg>
           </a>}
 
@@ -542,7 +545,7 @@ const schema = JSON.stringify(schemaObject);
       margin: 0 0 1.15rem;
   }
 
-  .original-link {
+  .discussion-link {
       display: inline-flex;
       align-items: center;
       gap: 0.45rem;
@@ -558,13 +561,13 @@ const schema = JSON.stringify(schemaObject);
       width: fit-content;
   }
 
-  .original-link:hover {
+  .discussion-link:hover {
       border-color: #24A1DE;
       color: #24A1DE;
       background-color: rgba(36, 161, 222, 0.12);
   }
 
-  .original-link svg {
+  .discussion-link svg {
       width: 16px;
       height: 16px;
       flex-shrink: 0;
@@ -885,7 +888,7 @@ const schema = JSON.stringify(schemaObject);
         .article-image-wrap {
             margin-bottom: 1.35rem;
         }
-        .original-link {
+        .discussion-link {
             width: 100%;
             justify-content: center;
         }
@@ -1130,26 +1133,43 @@ const schema = JSON.stringify(schemaObject);
           loading: "lazy",
       };
 
-      const savedTheme = localStorage.getItem('theme') || 'dark';
-      const initialGiscusTheme = savedTheme === 'light' ? 'light' : 'dark';
+      const loadGiscus = () => {
+          if (giscusContainer.dataset.loaded === 'true') return;
+          giscusContainer.dataset.loaded = 'true';
 
-      const script = document.createElement('script');
-      script.src = 'https://giscus.app/client.js';
-      script.setAttribute('data-repo', giscusConfig.repo);
-      script.setAttribute('data-repo-id', giscusConfig.repoId);
-      script.setAttribute('data-category', giscusConfig.category);
-      script.setAttribute('data-category-id', giscusConfig.categoryId);
-      script.setAttribute('data-mapping', giscusConfig.mapping);
-      script.setAttribute('data-strict', giscusConfig.strict);
-      script.setAttribute('data-reactions-enabled', giscusConfig.reactionsEnabled);
-      script.setAttribute('data-emit-metadata', giscusConfig.emitMetadata);
-      script.setAttribute('data-input-position', giscusConfig.inputPosition);
-      script.setAttribute('data-theme', initialGiscusTheme);
-      script.setAttribute('data-lang', giscusConfig.lang);
-      script.setAttribute('data-loading', giscusConfig.loading);
-      script.crossOrigin = 'anonymous';
-      script.async = true;
-      giscusContainer.appendChild(script);
+          const savedTheme = localStorage.getItem('theme') || 'dark';
+          const initialGiscusTheme = savedTheme === 'light' ? 'light' : 'dark';
+
+          const script = document.createElement('script');
+          script.src = 'https://giscus.app/client.js';
+          script.setAttribute('data-repo', giscusConfig.repo);
+          script.setAttribute('data-repo-id', giscusConfig.repoId);
+          script.setAttribute('data-category', giscusConfig.category);
+          script.setAttribute('data-category-id', giscusConfig.categoryId);
+          script.setAttribute('data-mapping', giscusConfig.mapping);
+          script.setAttribute('data-strict', giscusConfig.strict);
+          script.setAttribute('data-reactions-enabled', giscusConfig.reactionsEnabled);
+          script.setAttribute('data-emit-metadata', giscusConfig.emitMetadata);
+          script.setAttribute('data-input-position', giscusConfig.inputPosition);
+          script.setAttribute('data-theme', initialGiscusTheme);
+          script.setAttribute('data-lang', giscusConfig.lang);
+          script.setAttribute('data-loading', giscusConfig.loading);
+          script.crossOrigin = 'anonymous';
+          script.async = true;
+          giscusContainer.appendChild(script);
+      };
+
+      if ('IntersectionObserver' in window) {
+          const giscusLoader = new IntersectionObserver((entries) => {
+              if (entries.some((entry) => entry.isIntersecting)) {
+                  loadGiscus();
+                  giscusLoader.disconnect();
+              }
+          }, { rootMargin: '480px 0px' });
+          giscusLoader.observe(giscusContainer);
+      } else {
+          loadGiscus();
+      }
 
       // Sync theme switch with Giscus iframe
       const observer = new MutationObserver(() => {
