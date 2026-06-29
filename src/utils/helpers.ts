@@ -23,8 +23,11 @@ export function excerptAfterTitle(text: string, title: string, limit: number): s
   let excerpt = source;
   if (cleanTitle && source.toLowerCase().startsWith(cleanTitle.toLowerCase())) {
     excerpt = source.slice(cleanTitle.length).replace(/^[\s:—–-]+/, "").trim();
+    if (!excerpt || excerpt.length < 24) {
+      return "";
+    }
   }
-  if (!excerpt || excerpt.length < 24) {
+  if (!excerpt) {
     excerpt = source;
   }
   return truncateText(excerpt, limit);
