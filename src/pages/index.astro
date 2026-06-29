@@ -17,9 +17,27 @@ import {
 
 const feedItems = loadFeedItems();
 
-function existingPublicImage(publicPath) {
+function existingSiteImage(publicPath) {
   if (!publicPath) return null;
-  return fs.existsSync(path.resolve('public', publicPath)) ? publicPath : null;
+  const candidates = [
+    path.resolve('public', publicPath),
+    path.resolve(publicPath),
+    path.join(process.env.SITE_ROOT || '/home/deploy/ialexey-web', publicPath),
+  ];
+  return candidates.some((candidate) => fs.existsSync(candidate)) ? publicPath : null;
+}
+
+function responsiveSrcSetFor(publicPath) {
+  if (!publicPath || !/\.(png|jpe?g)$/i.test(publicPath)) return undefined;
+  const publicFile = path.resolve('public', publicPath);
+  if (!fs.existsSync(publicFile)) return undefined;
+  const base = publicPath
+    .replace(/^\/+/, '')
+    .replace(/[\\/]/g, '-')
+    .replace(/\.[a-z0-9]+$/i, '');
+  return [360, 640, 960]
+    .map((width) => `/generated/responsive/${base}-${width}.webp ${width}w`)
+    .join(', ');
 }
 
 function toEnglishPost(item) {
@@ -35,7 +53,8 @@ function toEnglishPost(item) {
     excerpt: excerptAfterTitle(text, title, 180),
     date: item.date,
     relativeDate: formatRelativeTime(item.date, 'en'),
-    image: existingPublicImage(postImagePath(item, 'en')),
+    image: existingSiteImage(postImagePath(item, 'en')),
+    imageSrcSet: responsiveSrcSetFor(postImagePath(item, 'en')),
     views: Number(item.views || 0),
     categorySlug,
     category: categoryLabel(categorySlug, 'en'),

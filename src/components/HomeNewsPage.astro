@@ -1,8 +1,5 @@
 ---
-import {
-  responsiveImageSrcSet,
-  truncateText
-} from '../utils/helpers';
+import { truncateText } from '../utils/helpers';
 
 interface HomePost {
   id: number | string;
@@ -12,6 +9,7 @@ interface HomePost {
   date: string;
   relativeDate: string;
   image: string | null;
+  imageSrcSet?: string;
   views: number;
   categorySlug: string;
   category: string;
@@ -107,11 +105,11 @@ function formatMskDate(value: string) {
           {leadPost.image ? (
             <img
               src={`/${leadPost.image}`}
-              srcset={responsiveImageSrcSet(leadPost.image)}
+              srcset={leadPost.imageSrcSet}
               alt=""
               loading="eager"
               decoding="async"
-              sizes="(max-width: 860px) 100vw, 42vw"
+              sizes="(max-width: 860px) 100vw, 40vw"
             />
           ) : (
             <span>{leadPost.category}</span>
@@ -142,7 +140,7 @@ function formatMskDate(value: string) {
           <a href={post.url} class="post-row">
             <div class="post-row__thumb" aria-hidden="true">
               {post.image ? (
-                <img src={`/${post.image}`} srcset={responsiveImageSrcSet(post.image)} alt="" loading="lazy" decoding="async" sizes="76px" />
+                <img src={`/${post.image}`} srcset={post.imageSrcSet} alt="" loading="lazy" decoding="async" sizes="(max-width: 860px) 100vw, 760px" />
               ) : (
                 <span>{post.category}</span>
               )}
@@ -267,7 +265,7 @@ function formatMskDate(value: string) {
 
   .lead-card {
     display: grid;
-    grid-template-columns: minmax(260px, 0.72fr) minmax(0, 1fr);
+    grid-template-columns: minmax(280px, 0.68fr) minmax(0, 1fr);
     min-height: 320px;
     padding: 0;
     border: 1px solid var(--border);
@@ -279,6 +277,7 @@ function formatMskDate(value: string) {
 
   .lead-card__media {
     min-height: 100%;
+    aspect-ratio: 1 / 1;
     overflow: hidden;
     background: linear-gradient(135deg, rgba(240, 68, 101, 0.12), rgba(255, 255, 255, 0.03));
     display: flex;
@@ -393,21 +392,19 @@ function formatMskDate(value: string) {
 
   .post-row {
     display: grid;
-    grid-template-columns: 76px minmax(0, 1fr);
-    gap: 0.8rem;
-    align-items: center;
-    padding: 1rem;
+    gap: 0;
+    padding: 0;
     border: 1px solid var(--border);
     border-radius: 8px;
     background: var(--card-bg);
     min-width: 0;
+    overflow: hidden;
   }
 
   .post-row__thumb {
-    width: 76px;
+    width: 100%;
     aspect-ratio: 1 / 1;
-    border: 1px solid var(--border);
-    border-radius: 6px;
+    border-bottom: 1px solid var(--border);
     overflow: hidden;
     background: linear-gradient(135deg, rgba(240, 68, 101, 0.12), rgba(255, 255, 255, 0.03));
     display: flex;
@@ -415,7 +412,7 @@ function formatMskDate(value: string) {
     justify-content: center;
     color: var(--text-muted);
     font-family: var(--font-mono);
-    font-size: 0.68rem;
+    font-size: 0.92rem;
     font-weight: 800;
     text-align: center;
   }
@@ -430,7 +427,13 @@ function formatMskDate(value: string) {
   .post-row__content {
     min-width: 0;
     display: grid;
-    gap: 0.25rem;
+    gap: 0.35rem;
+    padding: 1rem;
+  }
+
+  .post-row__content strong {
+    font-size: 1.1rem;
+    line-height: 1.25;
   }
 
   .post-row span,
@@ -541,12 +544,7 @@ function formatMskDate(value: string) {
     }
 
     .post-row {
-      grid-template-columns: 64px minmax(0, 1fr);
-      padding: 0.85rem;
-    }
-
-    .post-row__thumb {
-      width: 64px;
+      grid-template-columns: 1fr;
     }
   }
 </style>
