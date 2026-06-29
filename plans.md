@@ -46,12 +46,12 @@ Telegram не должен мелькать как:
 
 - [x] Удалить/отключить публичные следы `ialexey.ru`, `ialexey`, `iAlexey`, `ialexeyru` там, где они видны пользователям, поисковикам или ИИ-агентам.
 - [ ] Убрать 301/302 редиректы `ialexey.ru -> alexgetman.com` в Nginx/Cloudflare, если домен ещё обслуживается.
-- [ ] Проверить, что старые post routes возвращают корректный `410 Gone` и `noindex`:
+- [x] Проверить, что старые post routes возвращают корректный `410 Gone` и `noindex`:
   - `/posts/*`
   - `/ru/posts/*`
   - `/en/*`
-- [ ] Проверить, что `/pipeline-status` и Command Center используют только canonical `post_id`, без Telegram ID как номера поста.
-- [ ] Проверить, что sitemap, feeds, `llms.txt`, `index.md`, markdown endpoints и JSON-LD используют только новые canonical URL.
+- [x] Проверить, что `/pipeline-status` и Command Center используют только canonical `post_id`, без Telegram ID как номера поста.
+- [x] Проверить, что sitemap, feeds, `llms.txt`, `index.md`, markdown endpoints и JSON-LD используют только новые canonical URL.
 - [x] Убрать любые “original Telegram post/source” формулировки из публичного сайта.
 - [x] Оставить Telegram-ссылки только как discussion/community links.
 
@@ -101,16 +101,16 @@ Telegram не должен мелькать как:
 ## Content UX
 
 - [x] Сделать `/archive` и `/ru/archive` с группировкой по годам/месяцам.
-- [ ] Сделать `/search` и `/ru/search` на базе `search-index.json`.
-- [ ] Сделать страницы категорий:
+- [x] Сделать `/search` и `/ru/search` на базе `search-index.json`.
+- [x] Сделать страницы категорий:
   - `/category/[category]`
   - `/ru/category/[category]`
-- [ ] Сделать бейджи/теги на страницах постов кликабельными.
-- [ ] Добавить read time.
+- [x] Сделать бейджи/теги на страницах постов кликабельными.
+- [x] Добавить read time.
 - [ ] Убрать дублирование заголовка в карточках постов: preview должен начинаться после первого заголовочного предложения.
 - [ ] Добавить блок `Trending Posts` на EN homepage.
 - [ ] Добавить emoji reactions под постами, если это не усложнит privacy/антиспам.
-- [ ] Улучшить code/pre styling для readability.
+- [x] Улучшить code/pre styling для readability.
 
 ## Homepage Redesign
 
@@ -126,7 +126,7 @@ Telegram не должен мелькать как:
 - [ ] Конвертировать входящие изображения в WebP/AVIF в posting pipeline или site build.
 - [ ] Сохранять локальные optimized media, не зависеть от Telegram CDN.
 - [ ] Проверить LCP на мобильных для главной и страниц постов.
-- [ ] Добавить responsive image sizes для post thumbnails/hero.
+- [x] Добавить responsive image sizes для post thumbnails/hero.
 - [ ] Не ломать media fallback для EN/RU локалей.
 
 ## Content Semantics
@@ -193,3 +193,4 @@ Telegram не должен мелькать как:
 - [ ] Boosty/монетизация.
 - [ ] Новые языки (`es`, `zh`) до стабилизации EN/RU.
 - [ ] Cloudflare/DNS-AID доработки, если текущий `isitagentready.com` остаётся 100/100.
+- [ ] Тяжелая конвертация всех post media в WebP/AVIF и хранение optimized variants. В этом прогоне сделан только безопасный минимум: existing build-time avatar/social image generation плюс `loading`, `decoding` и `sizes` на post images.

@@ -29,6 +29,11 @@ const cleanDescription = removeLeadingEmoji(description);
 const siteAuthor = siteName;
 const publicBaseUrl = "https://alexgetman.com";
 const socialImage = `${publicBaseUrl}/social-image.jpg`;
+const isRu = lang === "ru";
+const navHomeHref = isRu ? "/ru/#top" : "/#top";
+const navSearchHref = isRu ? "/ru/search/" : "/search/";
+const navArchiveHref = isRu ? "/ru/archive/" : "/archive/";
+const navRssHref = isRu ? "/ru/feed.xml" : "/feed.xml";
 ---
 <!DOCTYPE html>
 <html lang={lang}>
@@ -1178,9 +1183,21 @@ const socialImage = `${publicBaseUrl}/social-image.jpg`;
         <nav class="nav-drawer__nav">
             <ul class="nav-drawer__list">
                 <li>
-                    <a href="/#top" class="nav-drawer__link">
+                    <a href={navHomeHref} class="nav-drawer__link">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
-                        Главная
+                        {isRu ? "Главная" : "Home"}
+                    </a>
+                </li>
+                <li>
+                    <a href={navSearchHref} class="nav-drawer__link">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+                        {isRu ? "Поиск" : "Search"}
+                    </a>
+                </li>
+                <li>
+                    <a href={navArchiveHref} class="nav-drawer__link">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 4h18"/><path d="M5 4v16h14V4"/><path d="M8 9h8"/><path d="M8 13h8"/></svg>
+                        {isRu ? "Архив" : "Archive"}
                     </a>
                 </li>
                 <li>
@@ -1196,7 +1213,7 @@ const socialImage = `${publicBaseUrl}/social-image.jpg`;
                     </a>
                 </li>
                 <li>
-                    <a href="/feed.xml" class="nav-drawer__link">
+                    <a href={navRssHref} class="nav-drawer__link">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 11a9 9 0 0 1 9 9"/><path d="M4 4a16 16 0 0 1 16 16"/><circle cx="5" cy="19" r="1"/></svg>
                         RSS
                     </a>

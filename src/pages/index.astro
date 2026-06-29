@@ -130,6 +130,8 @@ function formatDate(value) {
       </p>
       <div class="hero__actions">
         <a href="/ru/" class="home-link">Russian feed</a>
+        <a href="/search/" class="home-link">Search</a>
+        <a href="/archive/" class="home-link">Archive</a>
         <a href="/projects/" class="home-link">Projects</a>
         <a href="/contacts/" class="home-link">Contacts</a>
       </div>
@@ -138,7 +140,7 @@ function formatDate(value) {
     <section class="section" aria-labelledby="posts-title">
       <div class="section__header">
         <h2 class="section__title" id="posts-title">Latest English posts</h2>
-        <a href="/feed.json" class="section__link">JSON feed</a>
+        <a href="/archive/" class="section__link">Archive</a>
       </div>
       <div class="post-list">
         {latestEnglishPosts.length > 0 ? latestEnglishPosts.map((post) => (

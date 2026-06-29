@@ -126,6 +126,31 @@ export function getSmartBadge(text: string): { label: string; class: string; emo
   return { label: "Новости", class: "badge--news", emoji: "📰" };
 }
 
+export function categorySlugFromBadge(badge: { class?: string; label?: string } | string): string {
+  const value = typeof badge === 'string' ? badge : (badge.class || badge.label || '');
+  if (value.includes('leak') || value === 'Сливы') return 'leaks';
+  if (value.includes('ai') || value === 'ИИ-Модели') return 'ai-models';
+  if (value.includes('neural') || value === 'Нейросети') return 'neural-networks';
+  return 'news';
+}
+
+export function categoryLabel(slug: string, locale = 'en'): string {
+  const labels: Record<string, { en: string; ru: string }> = {
+    'leaks': { en: 'Leaks', ru: 'Сливы' },
+    'ai-models': { en: 'AI Models', ru: 'ИИ-Модели' },
+    'neural-networks': { en: 'Neural Networks', ru: 'Нейросети' },
+    'news': { en: 'News', ru: 'Новости' },
+  };
+  return labels[slug]?.[locale === 'ru' ? 'ru' : 'en'] || labels.news[locale === 'ru' ? 'ru' : 'en'];
+}
+
+export function estimateReadTime(text: string, locale = 'en'): string {
+  const clean = compactText(String(text || '').replace(/<[^>]+>/g, ' '));
+  const words = clean ? clean.split(/\s+/).length : 0;
+  const minutes = Math.max(1, Math.ceil(words / 220));
+  return locale === 'ru' ? `${minutes} мин чтения` : `${minutes} min read`;
+}
+
 export function getPostPath(item: any, locale = 'en'): string {
   if (!item) return "/";
   if (typeof item === 'object') {

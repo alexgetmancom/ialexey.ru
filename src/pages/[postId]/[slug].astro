@@ -6,6 +6,8 @@ import {
   getFirstSentence,
   truncateText,
   getSmartBadge,
+  categorySlugFromBadge,
+  estimateReadTime,
   formatDate,
   sanitizeHtml
 } from '../../utils/helpers';
@@ -209,6 +211,8 @@ const telegramUrl = item.url || null;
 
 const formattedDate = formatDate(item.date);
 const badge = getSmartBadge(item.text);
+const categorySlug = categorySlugFromBadge(badge);
+const readTime = estimateReadTime(postBodyHtml || item.html || item.text, 'en');
 const postMedia = Array.isArray(item.media_en) && item.media_en.length > 0
   ? item.media_en
   : (Array.isArray(item.media) && item.media.length > 0
@@ -268,10 +272,11 @@ const schema = JSON.stringify(schemaObject);
 
       <article class="post-article">
           <div class="meta-row">
-              <span class={`badge ${badge.class}`}>{badge.label}</span>
+              <a class={`badge ${badge.class}`} href={`/category/${categorySlug}/`}>{badge.label}</a>
               <div class="meta-right">
                   {telegramUrl && <><a href={telegramUrl} target="_blank" rel="noopener" class="tg-source">Discussion / @{channelUsername}</a><span class="meta-dot">•</span></>}
                   <time datetime={item.date}>{formattedDate} MSK</time>
+                  <span class="meta-dot">•</span><span>{readTime}</span>
               </div>
           </div>
           
@@ -293,6 +298,9 @@ const schema = JSON.stringify(schemaObject);
                                   src={`/${mediaItem.path}`}
                                   class="article-image"
                                   alt={postTitle}
+                                  loading="lazy"
+                                  decoding="async"
+                                  sizes="(max-width: 720px) 100vw, 640px"
                               />
                           </div>
                       )
@@ -380,7 +388,7 @@ const schema = JSON.stringify(schemaObject);
                           <a href={postUrl} class="related-card">
                               <div class="related-card-img-wrap">
                                   {post.image ? (
-                                      <img src={`/${post.image}`} alt={post.title} class="related-card-img" loading="lazy" />
+                                      <img src={`/${post.image}`} alt={post.title} class="related-card-img" loading="lazy" decoding="async" />
                                   ) : (
                                       <div class="related-card-placeholder">
                                           <span>{smartBadge.label}</span>
@@ -543,6 +551,35 @@ const schema = JSON.stringify(schemaObject);
 
   .article-body :global(p) {
       margin: 0 0 1.15rem;
+  }
+
+  .article-body :global(code) {
+      padding: 0.15rem 0.35rem;
+      border: 1px solid var(--border);
+      border-radius: 5px;
+      background: rgba(255, 255, 255, 0.04);
+      color: var(--text-header);
+      font-family: var(--font-mono);
+      font-size: 0.92em;
+      overflow-wrap: anywhere;
+  }
+
+  .article-body :global(pre) {
+      max-width: 100%;
+      overflow-x: auto;
+      margin: 1.35rem 0;
+      padding: 1rem;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: rgba(0, 0, 0, 0.22);
+      line-height: 1.55;
+  }
+
+  .article-body :global(pre code) {
+      padding: 0;
+      border: 0;
+      background: transparent;
+      white-space: pre;
   }
 
   .discussion-link {
