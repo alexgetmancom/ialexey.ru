@@ -12,7 +12,8 @@ import {
   formatRelativeTime,
   getFirstSentence,
   getSmartBadge,
-  postImagePath
+  postImagePath,
+  postVisualMedia
 } from '../../utils/helpers';
 
 const feedItems = loadFeedItems();
@@ -46,15 +47,19 @@ function toRussianPost(item) {
   const title = getFirstSentence(text) || `Пост ${id}`;
   const badge = getSmartBadge(text);
   const categorySlug = categorySlugFromBadge(badge);
+  const visualMedia = postVisualMedia(item, 'ru');
+  const visualPath = existingSiteImage(visualMedia?.path);
   return {
     id,
     url: `/ru/${id}/${item.slug_ru}/`,
     title,
+    body: text,
     excerpt: excerptAfterTitle(text, title, 180),
     date: item.date,
     relativeDate: formatRelativeTime(item.date, 'ru'),
-    image: existingSiteImage(postImagePath(item, 'ru')),
-    imageSrcSet: responsiveSrcSetFor(postImagePath(item, 'ru')),
+    image: visualPath,
+    mediaType: visualPath ? visualMedia?.type || 'image' : null,
+    imageSrcSet: visualMedia?.type === 'image' ? responsiveSrcSetFor(postImagePath(item, 'ru')) : undefined,
     views: Number(item.views || 0),
     categorySlug,
     category: categoryLabel(categorySlug, 'ru'),

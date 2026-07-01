@@ -215,6 +215,30 @@ export function postImagePath(item: any, locale = 'en'): string | null {
   return normalizePublicPath(directImage || imageMedia?.path) || null;
 }
 
+export function postVisualMedia(item: any, locale = 'en'): { type: 'image' | 'video'; path: string } | null {
+  if (!item) return null;
+  const directImage = locale === 'ru'
+    ? (item.image || item.image_en)
+    : (item.image_en || item.image);
+  const normalizedDirectImage = normalizePublicPath(directImage);
+  if (normalizedDirectImage) {
+    return { type: 'image', path: normalizedDirectImage };
+  }
+
+  const localizedMedia = locale === 'ru' ? item.media : item.media_en;
+  const fallbackMedia = locale === 'ru' ? item.media_en : item.media;
+  const media = Array.isArray(localizedMedia) && localizedMedia.length > 0
+    ? localizedMedia
+    : (Array.isArray(fallbackMedia) ? fallbackMedia : []);
+  const mediaItem = media.find((entry: any) => entry?.path);
+  const path = normalizePublicPath(mediaItem?.path);
+  if (!path) return null;
+  const type = String(mediaItem?.type || '').toLowerCase() === 'video' || /\.(mp4|webm|mov)$/i.test(path)
+    ? 'video'
+    : 'image';
+  return { type, path };
+}
+
 export function postOgImagePath(item: any, locale = 'en'): string {
   const postId = item?.post_id || item?.id;
   if (!postId) return '/social-image.jpg';

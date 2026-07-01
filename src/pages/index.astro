@@ -12,7 +12,8 @@ import {
   formatRelativeTime,
   getFirstSentence,
   getSmartBadge,
-  postImagePath
+  postImagePath,
+  postVisualMedia
 } from '../utils/helpers';
 
 const feedItems = loadFeedItems();
@@ -46,15 +47,19 @@ function toEnglishPost(item) {
   const title = getFirstSentence(text) || `Post ${id}`;
   const badge = getSmartBadge(item.text || text);
   const categorySlug = categorySlugFromBadge(badge);
+  const visualMedia = postVisualMedia(item, 'en');
+  const visualPath = existingSiteImage(visualMedia?.path);
   return {
     id,
     url: `/${id}/${item.slug_en}/`,
     title,
+    body: text,
     excerpt: excerptAfterTitle(text, title, 180),
     date: item.date,
     relativeDate: formatRelativeTime(item.date, 'en'),
-    image: existingSiteImage(postImagePath(item, 'en')),
-    imageSrcSet: responsiveSrcSetFor(postImagePath(item, 'en')),
+    image: visualPath,
+    mediaType: visualPath ? visualMedia?.type || 'image' : null,
+    imageSrcSet: visualMedia?.type === 'image' ? responsiveSrcSetFor(postImagePath(item, 'en')) : undefined,
     views: Number(item.views || 0),
     categorySlug,
     category: categoryLabel(categorySlug, 'en'),

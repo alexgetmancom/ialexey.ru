@@ -1,14 +1,16 @@
 ---
-import { truncateText } from '../utils/helpers';
+import { compactText, truncateText } from '../utils/helpers';
 
 interface HomePost {
   id: number | string;
   url: string;
   title: string;
+  body?: string;
   excerpt: string;
   date: string;
   relativeDate: string;
   image: string | null;
+  mediaType?: 'image' | 'video' | null;
   imageSrcSet?: string;
   views: number;
   categorySlug: string;
@@ -55,106 +57,436 @@ interface Props {
 
 const {
   posts,
-  trendingPosts,
   labels,
   locale,
 } = Astro.props;
 
-const storyPosts = posts.slice(0, 3);
-const updatePosts = posts.slice(3, 8);
+const storyPosts = posts.slice(0, 8);
+const activePost = storyPosts[0] || null;
+const isRu = locale === 'ru';
+const ui = {
+  storyLabel: isRu ? 'Новостной плеер' : 'AI news player',
+  postTab: isRu ? 'Пост' : 'Post',
+  discussionTab: isRu ? 'Обсуждение' : 'Discussion',
+  sourcesTab: isRu ? 'Источники' : 'Sources',
+  previous: isRu ? 'Предыдущая новость' : 'Previous story',
+  next: isRu ? 'Следующая новость' : 'Next story',
+  discuss: isRu ? 'Обсудить' : 'Discuss',
+  share: isRu ? 'Поделиться' : 'Share',
+  openPost: isRu ? 'Открыть пост' : 'Open post',
+  mute: isRu ? 'Звук' : 'Audio',
+  muted: isRu ? 'Звук выкл' : 'Muted',
+  storyRail: isRu ? 'Выбор новостей' : 'Story rail',
+  noDiscussion: isRu ? 'Обсуждения подключим здесь. Пока можно открыть пост и поделиться ссылкой.' : 'Discussion will live here. For now, open the post or share the link.',
+  sourcesHint: isRu ? 'Источники и социальные копии появятся здесь, когда они есть у поста.' : 'Sources and social copies will appear here when a post has them.',
+  views: isRu ? 'просмотров' : 'views',
+  replies: isRu ? 'ответов' : 'replies',
+  reactions: isRu ? 'реакций' : 'reactions',
+};
 
-function formatMskDate(value: string) {
-  if (!value) return "";
-  try {
-    return new Intl.DateTimeFormat(locale === 'ru' ? 'ru-RU' : 'en-GB', {
-      timeZone: "Europe/Moscow",
-      day: "2-digit",
-      month: "short",
-      year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-      hour12: false,
-    }).format(new Date(value));
-  } catch (e) {
-    return value;
-  }
+function paragraphsFor(post: HomePost) {
+  const raw = post.body || post.excerpt || post.title;
+  const lines = raw
+    .split(/\n+/)
+    .map((line) => compactText(line))
+    .filter(Boolean);
+  const withoutTitle = lines[0]?.toLowerCase() === compactText(post.title).toLowerCase()
+    ? lines.slice(1)
+    : lines;
+  return (withoutTitle.length ? withoutTitle : lines).slice(0, 7);
+}
+
+function metricValue(value: number) {
+  if (!value) return '0';
+  if (value >= 1000) return `${(value / 1000).toFixed(value >= 10000 ? 0 : 1)}k`;
+  return String(value);
 }
 ---
 
 <main class="home-page">
-  {storyPosts.length ? (
-    <section class="home-stage" aria-label={labels.latestPosts}>
-      <div class="story-grid">
+  {activePost ? (
+    <section class="story-player" aria-label={ui.storyLabel} data-story-player>
+      <div class="story-player__main">
+        <div class="story-visual-wrap">
+          <button class="story-arrow story-arrow--prev" type="button" aria-label={ui.previous} data-story-prev>
+            <span aria-hidden="true">‹</span>
+          </button>
+
+          <article class={`story-visual${activePost.image ? '' : ' story-visual--no-image'}`} data-story-visual>
+            <div class="story-progress" aria-hidden="true" style={`--story-count: ${storyPosts.length}`} data-story-progress>
+              {storyPosts.map((post, index) => (
+                <span class={index === 0 ? 'is-active' : ''} data-story-progress-bar>
+                  <i></i>
+                </span>
+              ))}
+            </div>
+            <a class="story-visual__link" href={activePost.url} aria-label={activePost.title} data-story-card-link>
+              {activePost.image ? (
+                <>
+                  <img
+                    src={activePost.mediaType === 'video' ? '' : `/${activePost.image}`}
+                    srcset={activePost.mediaType === 'video' ? undefined : activePost.imageSrcSet}
+                    alt=""
+                    loading="eager"
+                    decoding="async"
+                    sizes="(max-width: 760px) min(100vw - 2rem, 410px), 410px"
+                    hidden={activePost.mediaType === 'video'}
+                    data-story-image
+                  />
+                  <video
+                    src={activePost.mediaType === 'video' ? `/${activePost.image}` : ''}
+                    muted
+                    loop
+                    autoplay
+                    playsinline
+                    preload="metadata"
+                    hidden={activePost.mediaType !== 'video'}
+                    data-story-video
+                  ></video>
+                </>
+              ) : (
+                <span class="story-visual__fallback" data-story-fallback>{activePost.category}</span>
+              )}
+            </a>
+            <div class="story-visual__chrome" aria-hidden="true">
+              <span data-story-kicker>{activePost.category}</span>
+              <span data-story-time>{activePost.relativeDate}</span>
+            </div>
+            <button class="audio-chip" type="button" data-audio-toggle aria-pressed="true">
+              <span aria-hidden="true">♪</span>
+              <span data-audio-label>{ui.muted}</span>
+            </button>
+          </article>
+
+          <button class="story-arrow story-arrow--next" type="button" aria-label={ui.next} data-story-next>
+            <span aria-hidden="true">›</span>
+          </button>
+        </div>
+
+        <aside class="story-context" data-story-context>
+          <div class="story-tabs" role="tablist" aria-label={labels.sidebarLabel}>
+            <button class="story-tab is-active" type="button" data-panel-tab="post">{ui.postTab}</button>
+            <button class="story-tab" type="button" data-panel-tab="discussion">{ui.discussionTab}</button>
+            <button class="story-tab" type="button" data-panel-tab="sources">{ui.sourcesTab}</button>
+          </div>
+
+          <div class="story-panel is-active" data-panel="post">
+            <div class="story-context__head">
+              <span class="pill" data-story-category>{activePost.category}</span>
+              <time datetime={activePost.date} data-story-date>{activePost.relativeDate}</time>
+            </div>
+            <h1 data-story-title>{activePost.title}</h1>
+            <div class="story-copy" data-story-copy>
+              {paragraphsFor(activePost).map((paragraph) => (
+                <p>{paragraph}</p>
+              ))}
+            </div>
+            <div class="story-metrics">
+              <span><b data-story-views>{metricValue(activePost.views)}</b> {ui.views}</span>
+              <span><b>0</b> {ui.replies}</span>
+              <span><b>0</b> {ui.reactions}</span>
+            </div>
+            <div class="story-actions">
+              <a class="story-action story-action--primary" href={activePost.url} data-story-open>{ui.openPost}</a>
+              <button class="story-action" type="button" data-story-discuss>{ui.discuss}</button>
+              <button class="story-action" type="button" data-story-share>{ui.share}</button>
+            </div>
+          </div>
+
+          <div class="story-panel" data-panel="discussion" hidden>
+            <h2>{ui.discussionTab}</h2>
+            <p>{ui.noDiscussion}</p>
+            <a class="story-action story-action--primary" href={activePost.url} data-story-discussion-link>{ui.openPost}</a>
+          </div>
+
+          <div class="story-panel" data-panel="sources" hidden>
+            <h2>{ui.sourcesTab}</h2>
+            <p>{ui.sourcesHint}</p>
+            <a class="story-action story-action--primary" href={activePost.url} data-story-source-link>{ui.openPost}</a>
+          </div>
+        </aside>
+      </div>
+
+      <nav class="story-rail" aria-label={ui.storyRail}>
         {storyPosts.map((post, index) => (
-          <a href={post.url} class={`story-card${post.image ? '' : ' story-card--no-image'}`}>
-            <div class="story-card__media" aria-hidden="true">
+          <a
+            href={post.url}
+            class={`rail-card${index === 0 ? ' is-active' : ''}${post.image ? '' : ' rail-card--no-image'}`}
+            data-story-index={index}
+          >
+            <span class="rail-card__media" aria-hidden="true">
               {post.image ? (
-                <img
-                  src={`/${post.image}`}
-                  srcset={post.imageSrcSet}
-                  alt=""
-                  loading={index === 0 ? 'eager' : 'lazy'}
-                  decoding="async"
-                  sizes="(max-width: 820px) min(100vw, 430px), (max-width: 1180px) 42vw, 320px"
-                />
+                post.mediaType === 'video' ? (
+                  <video src={`/${post.image}`} muted loop playsinline preload="metadata"></video>
+                ) : (
+                  <img
+                    src={`/${post.image}`}
+                    srcset={post.imageSrcSet}
+                    alt=""
+                    loading={index < 4 ? 'eager' : 'lazy'}
+                    decoding="async"
+                    sizes="120px"
+                  />
+                )
               ) : (
                 <span>{post.category}</span>
               )}
-            </div>
-            <div class="story-card__shade"></div>
-            <div class="story-card__content">
-              <div class="story-card__meta">
-                <span class="pill">{post.category}</span>
-                <time datetime={post.date}>{post.relativeDate || `${formatMskDate(post.date)} ${labels.mskSuffix}`}</time>
-              </div>
-              <h1>{post.title}</h1>
-              {post.excerpt && <p>{truncateText(post.excerpt, 112)}</p>}
-            </div>
+            </span>
+            <span class="rail-card__shade"></span>
+            <span class="rail-card__text">
+              <span>{post.category}</span>
+              <strong>{truncateText(post.title, 56)}</strong>
+            </span>
           </a>
         ))}
-      </div>
+      </nav>
 
-      <aside class="trending-panel" aria-label={labels.sidebarLabel}>
-        <div class="section__header">
-          <h2 class="section__title">{labels.trending}</h2>
-          <a href={locale === 'ru' ? '/ru/search/' : '/search/'} class="section__link">{labels.search}</a>
-        </div>
-        <div class="compact-list">
-          {trendingPosts.map((post) => (
-            <a href={post.url} class="compact-row">
-              <span>{post.category}</span>
-              <strong>{truncateText(post.title, 82)}</strong>
-            </a>
-          ))}
-        </div>
-      </aside>
+      <script type="application/json" data-story-payload set:html={JSON.stringify({
+        ui,
+        posts: storyPosts.map((post) => ({
+          id: post.id,
+          url: post.url,
+          title: post.title,
+          body: paragraphsFor(post),
+          excerpt: post.excerpt,
+          date: post.date,
+          relativeDate: post.relativeDate,
+          image: post.image ? `/${post.image}` : null,
+          mediaType: post.mediaType || null,
+          imageSrcSet: post.imageSrcSet || '',
+          views: metricValue(post.views),
+          category: post.category,
+        })),
+      })}></script>
     </section>
   ) : (
     <p class="empty">{labels.empty}</p>
   )}
-
-  {updatePosts.length > 0 && (
-    <section class="updates-strip" aria-labelledby="updates-title">
-      <div class="section__header">
-        <h2 class="section__title" id="updates-title">{labels.latestUpdates}</h2>
-        <a href={locale === 'ru' ? '/ru/archive/' : '/archive/'} class="section__link">{labels.archive}</a>
-      </div>
-      <div class="update-list">
-        {updatePosts.map((post) => (
-          <a href={post.url} class="update-row">
-            <span>{post.category}</span>
-            <strong>{truncateText(post.title, 74)}</strong>
-            <time datetime={post.date}>{post.relativeDate || `${formatMskDate(post.date)} ${labels.mskSuffix}`}</time>
-          </a>
-        ))}
-      </div>
-    </section>
-  )}
 </main>
+
+<script>
+  (() => {
+    const root = document.querySelector('[data-story-player]');
+    if (!root) return;
+
+    const payloadEl = root.querySelector('[data-story-payload]');
+    const payload = payloadEl ? JSON.parse(payloadEl.textContent || '{}') : {};
+    const posts = payload.posts || [];
+    const ui = payload.ui || {};
+    if (!posts.length) return;
+
+    const image = root.querySelector('[data-story-image]');
+    const video = root.querySelector('[data-story-video]');
+    const fallback = root.querySelector('[data-story-fallback]');
+    const cardLink = root.querySelector('[data-story-card-link]');
+    const visual = root.querySelector('[data-story-visual]');
+    const kicker = root.querySelector('[data-story-kicker]');
+    const time = root.querySelector('[data-story-time]');
+    const category = root.querySelector('[data-story-category]');
+    const date = root.querySelector('[data-story-date]');
+    const title = root.querySelector('[data-story-title]');
+    const copy = root.querySelector('[data-story-copy]');
+    const views = root.querySelector('[data-story-views]');
+    const open = root.querySelector('[data-story-open]');
+    const discussionLink = root.querySelector('[data-story-discussion-link]');
+    const sourceLink = root.querySelector('[data-story-source-link]');
+    const progressBars = Array.from(root.querySelectorAll('[data-story-progress-bar]'));
+    const railCards = Array.from(root.querySelectorAll('[data-story-index]'));
+    const prev = root.querySelector('[data-story-prev]');
+    const next = root.querySelector('[data-story-next]');
+    const share = root.querySelector('[data-story-share]');
+    const discuss = root.querySelector('[data-story-discuss]');
+    const audioToggle = root.querySelector('[data-audio-toggle]');
+    const audioLabel = root.querySelector('[data-audio-label]');
+    const tabs = Array.from(root.querySelectorAll('[data-panel-tab]'));
+    const panels = Array.from(root.querySelectorAll('[data-panel]'));
+
+    let active = 0;
+    let timer = null;
+    let paused = false;
+    let muted = true;
+    const intervalMs = 8500;
+    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    function setPanel(name) {
+      tabs.forEach((tab) => tab.classList.toggle('is-active', tab.getAttribute('data-panel-tab') === name));
+      panels.forEach((panel) => {
+        const isActive = panel.getAttribute('data-panel') === name;
+        panel.classList.toggle('is-active', isActive);
+        panel.hidden = !isActive;
+      });
+    }
+
+    function render(index) {
+      active = (index + posts.length) % posts.length;
+      const post = posts[active];
+      if (!post) return;
+
+      if (cardLink) cardLink.href = post.url;
+      if (visual) visual.classList.toggle('story-visual--no-image', !post.image);
+      if (image) {
+        image.hidden = !post.image || post.mediaType === 'video';
+        if (post.image && post.mediaType !== 'video') {
+          image.setAttribute('src', post.image);
+          if (post.imageSrcSet) image.setAttribute('srcset', post.imageSrcSet);
+          else image.removeAttribute('srcset');
+        } else {
+          image.removeAttribute('src');
+          image.removeAttribute('srcset');
+        }
+      }
+      if (video) {
+        video.hidden = !post.image || post.mediaType !== 'video';
+        if (post.image && post.mediaType === 'video') {
+          if (video.getAttribute('src') !== post.image) {
+            video.setAttribute('src', post.image);
+            video.load();
+          }
+          video.play?.().catch(() => {});
+        } else {
+          video.pause?.();
+          video.removeAttribute('src');
+          video.load?.();
+        }
+      }
+      if (fallback) {
+        fallback.hidden = !!post.image;
+        fallback.textContent = post.category;
+      }
+      if (kicker) kicker.textContent = post.category;
+      if (time) time.textContent = post.relativeDate;
+      if (category) category.textContent = post.category;
+      if (date) {
+        date.textContent = post.relativeDate;
+        date.setAttribute('datetime', post.date || '');
+      }
+      if (title) title.textContent = post.title;
+      if (copy) {
+        copy.innerHTML = '';
+        (post.body && post.body.length ? post.body : [post.excerpt]).filter(Boolean).forEach((paragraph) => {
+          const p = document.createElement('p');
+          p.textContent = paragraph;
+          copy.appendChild(p);
+        });
+      }
+      if (views) views.textContent = post.views || '0';
+      [open, discussionLink, sourceLink].forEach((link) => {
+        if (link) link.href = post.url;
+      });
+
+      progressBars.forEach((bar, i) => {
+        bar.classList.toggle('is-active', i === active);
+        bar.classList.toggle('is-done', i < active);
+        const fill = bar.querySelector('i');
+        if (fill) {
+          fill.style.animation = 'none';
+          fill.offsetHeight;
+          fill.style.animation = i === active && !paused && !reduceMotion ? `storyProgress ${intervalMs}ms linear forwards` : 'none';
+          fill.style.transform = i < active ? 'scaleX(1)' : 'scaleX(0)';
+        }
+      });
+      railCards.forEach((card, i) => card.classList.toggle('is-active', i === active));
+    }
+
+    function stopTimer() {
+      if (timer) window.clearInterval(timer);
+      timer = null;
+    }
+
+    function startTimer() {
+      stopTimer();
+      if (paused || reduceMotion || posts.length < 2) return;
+      timer = window.setInterval(() => render(active + 1), intervalMs);
+      render(active);
+    }
+
+    prev?.addEventListener('click', () => {
+      render(active - 1);
+      startTimer();
+    });
+    next?.addEventListener('click', () => {
+      render(active + 1);
+      startTimer();
+    });
+    railCards.forEach((card, index) => {
+      card.addEventListener('click', (event) => {
+        event.preventDefault();
+        render(index);
+        setPanel('post');
+        startTimer();
+      });
+    });
+    root.addEventListener('mouseenter', () => {
+      paused = true;
+      startTimer();
+    });
+    root.addEventListener('mouseleave', () => {
+      paused = false;
+      startTimer();
+    });
+    root.addEventListener('focusin', () => {
+      paused = true;
+      startTimer();
+    });
+    root.addEventListener('focusout', () => {
+      paused = false;
+      startTimer();
+    });
+    tabs.forEach((tab) => {
+      tab.addEventListener('click', () => {
+        paused = true;
+        setPanel(tab.getAttribute('data-panel-tab') || 'post');
+        startTimer();
+      });
+    });
+    discuss?.addEventListener('click', () => {
+      paused = true;
+      setPanel('discussion');
+      startTimer();
+    });
+    share?.addEventListener('click', async () => {
+      const post = posts[active];
+      const url = new URL(post.url, window.location.origin).href;
+      try {
+        if (navigator.share) {
+          await navigator.share({ title: post.title, url });
+        } else {
+          await navigator.clipboard.writeText(url);
+          share.textContent = ui.copied || 'Copied';
+          window.setTimeout(() => { share.textContent = ui.share || 'Share'; }, 1400);
+        }
+      } catch (error) {
+        await navigator.clipboard?.writeText(url).catch(() => {});
+      }
+    });
+    audioToggle?.addEventListener('click', () => {
+      muted = !muted;
+      audioToggle.setAttribute('aria-pressed', String(muted));
+      audioToggle.classList.toggle('is-on', !muted);
+      if (audioLabel) audioLabel.textContent = muted ? (ui.muted || 'Muted') : (ui.mute || 'Audio');
+    });
+
+    let startX = 0;
+    root.addEventListener('touchstart', (event) => {
+      startX = event.touches[0]?.clientX || 0;
+    }, { passive: true });
+    root.addEventListener('touchend', (event) => {
+      const endX = event.changedTouches[0]?.clientX || 0;
+      const delta = endX - startX;
+      if (Math.abs(delta) > 55) {
+        render(active + (delta < 0 ? 1 : -1));
+        startTimer();
+      }
+    }, { passive: true });
+
+    render(0);
+    startTimer();
+  })();
+</script>
 
 <style>
   .home-page {
-    width: min(1528px, calc(100vw - 4rem));
+    width: min(1500px, calc(100vw - 4rem));
     max-width: none;
     margin-left: 50%;
     transform: translateX(-50%);
@@ -162,235 +494,427 @@ function formatMskDate(value: string) {
     min-width: 0;
   }
 
-  .home-stage {
+  .story-player {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(300px, 380px);
-    gap: 1rem;
-    align-items: start;
-  }
-
-  .story-grid {
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 1rem;
   }
 
-  .story-card {
+  .story-player__main {
+    display: grid;
+    grid-template-columns: minmax(360px, 0.82fr) minmax(380px, 0.72fr);
+    gap: clamp(1.2rem, 3vw, 2.8rem);
+    align-items: center;
+    justify-content: center;
+    min-height: min(76vh, 760px);
+  }
+
+  .story-visual-wrap {
     position: relative;
-    aspect-ratio: 9 / 16;
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    background: var(--card-bg);
-    color: var(--text-header);
+    display: grid;
+    place-items: center;
     min-width: 0;
+  }
+
+  .story-visual {
+    position: relative;
+    width: min(410px, 100%);
+    aspect-ratio: 9 / 16;
+    border: 1px solid var(--border-hover);
+    border-radius: 10px;
+    background: var(--card-bg);
     overflow: hidden;
     isolation: isolate;
+    box-shadow: 0 22px 70px rgba(0, 0, 0, 0.34);
   }
 
-  .story-card:hover {
-    border-color: var(--border-hover);
-  }
-
-  .story-card__media,
-  .story-card__shade {
+  .story-visual__link,
+  .story-visual__link img,
+  .story-visual__link video,
+  .story-visual__fallback {
     position: absolute;
     inset: 0;
   }
 
-  .story-card__media {
-    background:
-      radial-gradient(circle at 35% 18%, rgba(240, 68, 101, 0.16), transparent 34%),
-      linear-gradient(135deg, rgba(240, 68, 101, 0.1), rgba(255, 255, 255, 0.03));
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: var(--text-muted);
-    font-family: var(--font-mono);
-    font-size: 0.86rem;
-    font-weight: 800;
-    text-align: center;
-  }
-
-  .story-card__media img {
+  .story-visual__link img,
+  .story-visual__link video {
     width: 100%;
     height: 100%;
     object-fit: cover;
     display: block;
-    transform: scale(1.01);
   }
 
-  .story-card__shade {
-    z-index: 1;
+  .story-visual__link img[hidden],
+  .story-visual__link video[hidden] {
+    display: none !important;
+  }
+
+  .story-visual__fallback {
+    display: grid;
+    place-items: center;
     background:
-      linear-gradient(180deg, rgba(8, 11, 16, 0.04) 0%, rgba(8, 11, 16, 0.1) 43%, rgba(8, 11, 16, 0.82) 78%, rgba(8, 11, 16, 0.96) 100%);
+      radial-gradient(circle at 35% 18%, rgba(240, 68, 101, 0.18), transparent 35%),
+      linear-gradient(135deg, rgba(240, 68, 101, 0.12), rgba(255, 255, 255, 0.03));
+    color: var(--text-muted);
+    font-family: var(--font-mono);
+    font-weight: 800;
   }
 
-  .story-card__content {
+  .story-progress {
     position: absolute;
-    z-index: 2;
-    left: 0;
-    right: 0;
-    bottom: 0;
+    z-index: 3;
+    top: 0.75rem;
+    left: 0.75rem;
+    right: 0.75rem;
+    display: grid;
+    grid-template-columns: repeat(var(--story-count, 8), 1fr);
+    grid-auto-flow: column;
+    gap: 0.34rem;
+  }
+
+  .story-progress span {
+    height: 4px;
+    border-radius: 999px;
+    background: rgba(243, 246, 250, 0.48);
+    overflow: hidden;
+  }
+
+  .story-progress i {
+    display: block;
+    width: 100%;
+    height: 100%;
+    transform: scaleX(0);
+    transform-origin: left center;
+    background: var(--accent);
+  }
+
+  .story-progress .is-done i {
+    transform: scaleX(1);
+  }
+
+  .story-visual__chrome {
+    position: absolute;
+    z-index: 3;
+    left: 0.85rem;
+    right: 0.85rem;
+    bottom: 0.85rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    pointer-events: none;
+  }
+
+  .story-visual__chrome span {
+    max-width: 50%;
+    padding: 0.28rem 0.52rem;
+    border: 1px solid rgba(240, 68, 101, 0.32);
+    border-radius: 7px;
+    background: rgba(8, 11, 16, 0.58);
+    color: rgba(243, 246, 250, 0.82);
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    font-weight: 800;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .audio-chip {
+    position: absolute;
+    z-index: 4;
+    right: 0.8rem;
+    top: 2.05rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.32rem;
+    min-height: 34px;
+    padding: 0.25rem 0.5rem;
+    border: 1px solid rgba(243, 246, 250, 0.18);
+    border-radius: 999px;
+    background: rgba(8, 11, 16, 0.62);
+    color: var(--text-main);
+    font-size: 0.76rem;
+    font-weight: 800;
+    cursor: pointer;
+  }
+
+  .audio-chip.is-on {
+    border-color: rgba(240, 68, 101, 0.5);
+    color: var(--accent);
+  }
+
+  .story-arrow {
+    position: absolute;
+    z-index: 5;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 46px;
+    height: 46px;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    background: rgba(17, 22, 32, 0.82);
+    color: var(--text-header);
+    font-size: 2rem;
+    line-height: 1;
+    cursor: pointer;
+  }
+
+  .story-arrow:hover {
+    border-color: var(--border-hover);
+    color: var(--accent);
+  }
+
+  .story-arrow--prev {
+    left: max(0.65rem, calc(50% - 255px));
+  }
+
+  .story-arrow--next {
+    right: max(0.65rem, calc(50% - 255px));
+  }
+
+  .story-context {
+    align-self: center;
+    min-height: min(680px, 72vh);
+    max-height: min(720px, 76vh);
     display: flex;
     flex-direction: column;
-    gap: 0.55rem;
-    padding: clamp(1rem, 1.9vw, 1.35rem);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: rgba(17, 22, 32, 0.78);
+    overflow: hidden;
+    min-width: 0;
   }
 
-  .story-card__meta {
+  .story-tabs {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.25rem;
+    padding: 1rem 1rem 0;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .story-tab {
+    position: relative;
+    min-height: 42px;
+    border: 0;
+    background: transparent;
+    color: var(--text-secondary);
+    font-weight: 900;
+    font-size: 0.95rem;
+    cursor: pointer;
+  }
+
+  .story-tab::after {
+    content: "";
+    position: absolute;
+    left: 0.35rem;
+    right: 0.35rem;
+    bottom: -1px;
+    height: 2px;
+    border-radius: 999px;
+    background: transparent;
+  }
+
+  .story-tab.is-active {
+    color: var(--accent);
+  }
+
+  .story-tab.is-active::after {
+    background: var(--accent);
+  }
+
+  .story-panel {
+    padding: clamp(1.1rem, 2.2vw, 1.55rem);
+    overflow: auto;
+  }
+
+  .story-context__head {
     display: flex;
     align-items: center;
     flex-wrap: wrap;
     gap: 0.55rem;
+    margin-bottom: 0.8rem;
   }
 
-  .story-card__meta time {
-    color: rgba(243, 246, 250, 0.74);
+  .story-context__head time {
+    color: var(--text-secondary);
     font-family: var(--font-mono);
-    font-size: 0.72rem;
+    font-size: 0.78rem;
   }
 
-  .story-card h1 {
-    margin: 0;
-    font-size: clamp(1.25rem, 2vw, 1.72rem);
-    line-height: 1.04;
+  .story-panel h1,
+  .story-panel h2 {
+    margin: 0 0 0.9rem;
+    color: var(--text-header);
     letter-spacing: 0;
-    overflow-wrap: anywhere;
-    display: -webkit-box;
-    -webkit-line-clamp: 4;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
+    line-height: 1.05;
   }
 
-  .story-card p {
+  .story-panel h1 {
+    font-size: clamp(2rem, 3.2vw, 3.3rem);
+  }
+
+  .story-panel h2 {
+    font-size: 1.25rem;
+  }
+
+  .story-copy {
+    display: grid;
+    gap: 0.7rem;
+    color: var(--text-main);
+    font-size: clamp(0.98rem, 1.14vw, 1.08rem);
+    line-height: 1.46;
+  }
+
+  .story-copy p,
+  .story-panel > p {
     margin: 0;
-    color: rgba(243, 246, 250, 0.78);
-    font-size: 0.86rem;
-    line-height: 1.4;
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
+  }
+
+  .story-metrics {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.8rem;
+    margin-top: 1.15rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--border);
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+  }
+
+  .story-metrics b {
+    color: var(--text-header);
+  }
+
+  .story-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.65rem;
+    margin-top: 1rem;
+  }
+
+  .story-action {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 42px;
+    padding: 0.55rem 0.82rem;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.02);
+    color: var(--text-header);
+    font-weight: 900;
+    cursor: pointer;
+  }
+
+  .story-action:hover {
+    border-color: var(--border-hover);
+    color: var(--accent);
+  }
+
+  .story-action--primary {
+    border-color: rgba(240, 68, 101, 0.72);
+    background: var(--accent);
+    color: white;
+  }
+
+  .story-action--primary:hover {
+    color: white;
+    filter: brightness(1.05);
   }
 
   .pill {
     width: fit-content;
-    padding: 0.2rem 0.5rem;
-    border: 1px solid rgba(240, 68, 101, 0.36);
-    border-radius: 6px;
-    background: rgba(8, 11, 16, 0.55);
+    padding: 0.22rem 0.54rem;
+    border: 1px solid rgba(240, 68, 101, 0.38);
+    border-radius: 7px;
+    background: rgba(8, 11, 16, 0.5);
     color: var(--accent);
     font-family: var(--font-mono);
-    font-size: 0.72rem;
-    font-weight: 800;
+    font-size: 0.76rem;
+    font-weight: 900;
   }
 
-  .trending-panel,
-  .updates-strip {
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    background: var(--card-bg);
-    min-width: 0;
-  }
-
-  .trending-panel {
-    min-height: 100%;
-    padding: 1.1rem;
-  }
-
-  .section__header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
+  .story-rail {
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: minmax(104px, 128px);
     gap: 0.75rem;
-    margin-bottom: 0.9rem;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    padding: 0.1rem 0.05rem 0.55rem;
+    scrollbar-width: thin;
   }
 
-  .section__title {
-    margin: 0;
-    font-size: 1.2rem;
-  }
-
-  .section__link {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    min-height: 34px;
-    padding: 0.38rem 0.65rem;
+  .rail-card {
+    position: relative;
+    aspect-ratio: 9 / 16;
     border: 1px solid var(--border);
     border-radius: 8px;
-    background: rgba(255, 255, 255, 0.02);
-    color: var(--text-main);
-    font-size: 0.86rem;
+    overflow: hidden;
+    background: var(--card-bg);
+    color: var(--text-header);
+    isolation: isolate;
+  }
+
+  .rail-card.is-active {
+    border-color: rgba(240, 68, 101, 0.82);
+    box-shadow: 0 0 0 1px rgba(240, 68, 101, 0.3);
+  }
+
+  .rail-card__media,
+  .rail-card__shade,
+  .rail-card__text {
+    position: absolute;
+    inset: 0;
+  }
+
+  .rail-card__media img,
+  .rail-card__media video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+
+  .rail-card__media > span {
+    display: grid;
+    place-items: center;
+    height: 100%;
+    padding: 0.6rem;
+    color: var(--text-muted);
+    font-family: var(--font-mono);
     font-weight: 800;
+    text-align: center;
+    background:
+      radial-gradient(circle at 35% 18%, rgba(240, 68, 101, 0.16), transparent 34%),
+      linear-gradient(135deg, rgba(240, 68, 101, 0.1), rgba(255, 255, 255, 0.03));
   }
 
-  .section__link:hover {
-    color: var(--text-header);
-    border-color: var(--border-hover);
-    background: var(--accent-glow);
+  .rail-card__shade {
+    z-index: 1;
+    background: linear-gradient(180deg, transparent 25%, rgba(8, 11, 16, 0.94) 100%);
   }
 
-  .compact-list {
-    display: grid;
+  .rail-card__text {
+    z-index: 2;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    gap: 0.28rem;
+    padding: 0.62rem;
   }
 
-  .compact-row {
-    display: grid;
-    gap: 0.2rem;
-    padding: 0.82rem 0;
-    border-bottom: 1px solid var(--border);
-    color: var(--text-main);
-    min-width: 0;
-  }
-
-  .compact-row:last-child {
-    border-bottom: 0;
-  }
-
-  .compact-row strong {
-    color: var(--text-header);
-    font-size: 0.92rem;
-    line-height: 1.35;
-    overflow-wrap: anywhere;
-  }
-
-  .compact-row span {
-    color: var(--text-secondary);
+  .rail-card__text span {
+    color: var(--accent);
     font-family: var(--font-mono);
-    font-size: 0.74rem;
+    font-size: 0.62rem;
+    font-weight: 900;
   }
 
-  .updates-strip {
-    margin-top: 1rem;
-    padding: 1rem;
-  }
-
-  .update-list {
-    display: grid;
-    grid-template-columns: repeat(5, minmax(0, 1fr));
-    gap: 0.8rem;
-  }
-
-  .update-row {
-    display: grid;
-    gap: 0.25rem;
-    min-width: 0;
-    padding: 0.2rem 0.25rem;
-    color: var(--text-main);
-  }
-
-  .update-row span,
-  .update-row time {
-    color: var(--text-secondary);
-    font-family: var(--font-mono);
-    font-size: 0.72rem;
-  }
-
-  .update-row strong {
-    color: var(--text-header);
-    font-size: 0.9rem;
-    line-height: 1.25;
+  .rail-card__text strong {
+    font-size: 0.78rem;
+    line-height: 1.08;
     overflow-wrap: anywhere;
   }
 
@@ -399,52 +923,81 @@ function formatMskDate(value: string) {
     color: var(--text-secondary);
   }
 
-  @media (max-width: 1180px) {
-    .home-stage {
+  @keyframes storyProgress {
+    from { transform: scaleX(0); }
+    to { transform: scaleX(1); }
+  }
+
+  @media (max-width: 1120px) {
+    .story-player__main {
       grid-template-columns: 1fr;
-    }
-
-    .story-grid {
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-    }
-
-    .trending-panel {
       min-height: 0;
+      gap: 1rem;
+    }
+
+    .story-context {
+      width: min(100%, 720px);
+      justify-self: center;
+      min-height: 0;
+      max-height: none;
+    }
+
+    .story-arrow--prev {
+      left: max(0.65rem, calc(50% - 255px));
+    }
+
+    .story-arrow--next {
+      right: max(0.65rem, calc(50% - 255px));
     }
   }
 
-  @media (max-width: 820px) {
-    .story-grid {
-      grid-template-columns: 1fr;
-      justify-items: center;
-    }
-
-    .story-card {
-      width: min(100%, 430px);
-    }
-
-    .update-list {
-      grid-template-columns: 1fr;
-    }
-  }
-
-  @media (max-width: 520px) {
+  @media (max-width: 760px) {
     .home-page {
-      width: min(100%, calc(100vw - 1.5rem));
+      width: min(100%, calc(100vw - 1.25rem));
       padding-top: 0.25rem;
     }
 
-    .story-card__content {
-      padding: 1rem;
+    .story-visual {
+      width: min(100%, 410px);
     }
 
-    .story-card h1 {
-      font-size: clamp(1.45rem, 7vw, 1.9rem);
+    .story-arrow {
+      width: 40px;
+      height: 40px;
+      font-size: 1.65rem;
     }
 
-    .trending-panel,
-    .updates-strip {
-      padding: 0.9rem;
+    .story-context {
+      border-radius: 9px;
+    }
+
+    .story-tabs {
+      padding: 0.8rem 0.8rem 0;
+    }
+
+    .story-panel h1 {
+      font-size: clamp(1.7rem, 8vw, 2.45rem);
+    }
+
+    .story-copy {
+      font-size: 1rem;
+    }
+
+    .story-rail {
+      grid-auto-columns: minmax(86px, 104px);
+      gap: 0.55rem;
+    }
+  }
+
+  @media (max-width: 440px) {
+    .story-visual__chrome span:last-child,
+    .audio-chip span:last-child {
+      display: none;
+    }
+
+    .story-actions {
+      display: grid;
+      grid-template-columns: 1fr;
     }
   }
 </style>

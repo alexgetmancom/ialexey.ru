@@ -67,6 +67,11 @@ const navSearchHref = isRu ? "/ru/search/" : "/search/";
 const navArchiveHref = isRu ? "/ru/archive/" : "/archive/";
 const navAiModelsHref = isRu ? "/ru/category/ai-models/" : "/category/ai-models/";
 const navRssHref = isRu ? "/ru/feed.xml" : "/feed.xml";
+const currentPath = Astro.url.pathname;
+const isCurrentPath = (href: string) => {
+  const path = href.split('#')[0];
+  return currentPath === path || (path !== '/' && path !== '/ru/' && currentPath.startsWith(path));
+};
 ---
 <!DOCTYPE html>
 <html lang={lang}>
@@ -221,20 +226,24 @@ const navRssHref = isRu ? "/ru/feed.xml" : "/feed.xml";
             background-color: rgba(246, 248, 250, 0.85);
         }
 
+        .media-header .container {
+            max-width: 1500px;
+        }
+
         .header-container {
             display: grid;
             grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
             align-items: center;
-            gap: 0.75rem;
-            padding-top: 0.6rem;
-            padding-bottom: 0.6rem;
+            gap: 1rem;
+            padding-top: 0.72rem;
+            padding-bottom: 0.72rem;
         }
 
         .header-left {
             justify-self: start;
             display: flex;
             align-items: center;
-            gap: 0.75rem;
+            gap: 0.7rem;
             min-width: 0;
         }
 
@@ -245,41 +254,56 @@ const navRssHref = isRu ? "/ru/feed.xml" : "/feed.xml";
         .header-nav {
             display: flex;
             align-items: center;
-            gap: 0.35rem;
+            gap: 0.38rem;
             min-width: 0;
+            padding: 0.22rem;
+            border: 1px solid rgba(243, 246, 250, 0.08);
+            border-radius: 999px;
+            background: rgba(17, 22, 32, 0.46);
         }
 
         .header-nav a {
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            min-height: 30px;
-            padding: 0.25rem 0.45rem;
-            border-radius: 8px;
+            min-height: 38px;
+            padding: 0.44rem 0.72rem;
+            border: 1px solid transparent;
+            border-radius: 999px;
             color: var(--text-muted);
-            font-size: 0.8rem;
-            font-weight: 800;
+            font-size: 0.88rem;
+            font-weight: 900;
             white-space: nowrap;
         }
 
         .header-nav a:hover,
         .header-nav a[aria-current="page"] {
             color: var(--text-header);
-            background: var(--accent-glow);
+            border-color: rgba(240, 68, 101, 0.2);
+            background: rgba(240, 68, 101, 0.16);
+            box-shadow: inset 0 0 0 1px rgba(240, 68, 101, 0.06);
         }
 
         .logo-wrap {
             display: flex;
             align-items: center;
-            gap: 0.75rem;
+            gap: 0.72rem;
             text-decoration: none;
             justify-self: center;
             min-width: 0;
+            padding: 0.16rem 0.52rem 0.16rem 0.16rem;
+            border: 1px solid transparent;
+            border-radius: 999px;
+        }
+
+        .logo-wrap:hover {
+            border-color: rgba(240, 68, 101, 0.24);
+            background: rgba(240, 68, 101, 0.08);
         }
 
         .logo-avatar {
-            width: 36px;
-            height: 36px;
+            width: 38px;
+            height: 38px;
             border-radius: 50%;
             object-fit: cover;
             border: 1.5px solid var(--border);
@@ -293,7 +317,7 @@ const navRssHref = isRu ? "/ru/feed.xml" : "/feed.xml";
 
         .logo-text {
             font-family: var(--font-heading);
-            font-size: 1.3rem;
+            font-size: 1.38rem;
             font-weight: 800;
             letter-spacing: -0.5px;
             background: linear-gradient(135deg, var(--text-header) 70%, var(--accent) 100%);
@@ -320,7 +344,7 @@ const navRssHref = isRu ? "/ru/feed.xml" : "/feed.xml";
         .social-row {
             display: flex;
             align-items: center;
-            gap: 0.6rem;
+            gap: 0.68rem;
             justify-self: end;
             min-width: 0;
         }
@@ -344,8 +368,9 @@ const navRssHref = isRu ? "/ru/feed.xml" : "/feed.xml";
 
         #header-search-input {
             box-sizing: border-box;
-            width: 140px;
-            padding: 6px 32px 6px 28px;
+            width: 180px;
+            min-height: 40px;
+            padding: 8px 34px 8px 30px;
             border-radius: 20px;
             border: 1px solid var(--border);
             background-color: rgba(255, 255, 255, 0.02);
@@ -357,7 +382,7 @@ const navRssHref = isRu ? "/ru/feed.xml" : "/feed.xml";
         }
 
         #header-search-input:focus {
-            width: 200px;
+            width: 240px;
             border-color: var(--accent);
             background-color: var(--bg-color);
             box-shadow: 0 0 0 2px var(--accent-glow);
@@ -1280,9 +1305,9 @@ const navRssHref = isRu ? "/ru/feed.xml" : "/feed.xml";
                     </svg>
                 </button>
                 <nav class="header-nav" aria-label={navLabels.drawerTitle}>
-                    <a href={navHomeHref} aria-current={Astro.url.pathname === (isRu ? "/ru/" : "/") ? "page" : undefined}>{navLabels.home}</a>
-                    <a href={navArchiveHref}>{navLabels.archive}</a>
-                    <a href={navAiModelsHref}>{navLabels.aiModels}</a>
+                    <a href={navHomeHref} aria-current={isCurrentPath(navHomeHref) ? "page" : undefined}>{navLabels.home}</a>
+                    <a href={navArchiveHref} aria-current={isCurrentPath(navArchiveHref) ? "page" : undefined}>{navLabels.archive}</a>
+                    <a href={navAiModelsHref} aria-current={isCurrentPath(navAiModelsHref) ? "page" : undefined}>{navLabels.aiModels}</a>
                 </nav>
             </div>
             
